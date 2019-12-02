@@ -24,10 +24,12 @@ All user devices sharing:
 [Settings.all setObject:@"AllUserDevicesData" forKey:@"AllKey"];
 ``` 
 
-"all" saves keys in Key-Value Storage, which should be included in the target, you must also specify the name of the group in entitlements:
+"all" saves keys in Key-Value Storage, which should be included in the target, you must also specify the name of the group in entitlements.
 
-sample
+sample:
+```
 <key>com.apple.developer.ubiquity-kvstore-identifier</key>
 <string>9T111111W8.com.project.AppName</string>
+```
 
 9T111111W8 - team id
