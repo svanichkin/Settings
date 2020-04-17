@@ -1,6 +1,8 @@
 # Settings
 Settings is a class that allows you to work immediately with all local storage systems in a simple and convenient wrapper.
 
+This library works on many projects such as Mubert, Morse, etc. Top of App Store.
+
 Under the hood, work with NSUserDefaults (locally and with AppGroups), NSUbiquitousKeyValueStore, Keychain.
 
 Keychain storage:
