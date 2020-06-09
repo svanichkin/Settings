@@ -1,6 +1,6 @@
 //
 //  Settings.h
-//  v.2.1
+//  v.2.1.1
 //
 //  Created by Сергей Ваничкин on 19.08.16.
 //  Copyright © 2016 👽 Technology. All rights reserved.
@@ -49,6 +49,10 @@ typedef enum
 +(SettingsProxy *)device;      // Для appGroups на этом устройстве
 +(SettingsProxy *)all;         // Для Key-Value Storage на устройствах
 +(SettingsProxy *)keychain;    // Для связки ключей
+
+// Helpers
++(NSData *)dataWithObject:(id)object;
++(id)objectWithData:(NSData *)data;
 
 @end
 

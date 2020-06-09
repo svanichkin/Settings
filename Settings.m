@@ -1,6 +1,6 @@
 //
 //  Settings.m
-//  v.2.1
+//  v.2.1.1
 //
 //  Created by Сергей Ваничкин on 19.08.16.
 //  Copyright © 2016 👽 Technology. All rights reserved.
@@ -343,6 +343,19 @@ typedef enum
         
     return
     Settings.storage.keychain;
+}
+
+// Helpers
++(NSData *)dataWithObject:(id)object
+{
+    return
+    [NSKeyedArchiver archivedDataWithRootObject:object];
+}
+
++(id)objectWithData:(NSData *)data
+{
+    return
+    [NSKeyedUnarchiver unarchiveObjectWithData:data];
 }
 
 @end
