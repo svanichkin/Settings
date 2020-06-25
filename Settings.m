@@ -259,6 +259,20 @@ typedef enum
          forKey:key];
 }
 
+-(void) setObject:(id)object
+forKeyedSubscript:(NSString *)key
+{
+    return
+    [self setObject:object
+             forKey:key];
+}
+
+-(id)objectForKeyedSubscript:(NSString *)key
+{
+    return
+    [self objectForKey:key];
+}
+
 @end
 
 @interface Settings ()

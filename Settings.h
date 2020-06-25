@@ -61,7 +61,7 @@ typedef enum
 +(SettingsProxy *)application; // Только для этого приложения
 +(SettingsProxy *)device;      // Для appGroups на этом устройстве
 +(SettingsProxy *)all;         // Для Key-Value Storage на устройствах
-+(SettingsProxy *)keychain;    // Для связки ключейht
++(SettingsProxy *)keychain;    // Для связки ключей
 
 // Helpers
 +(NSData *)dataWithObject:(id)object;
