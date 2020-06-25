@@ -1,6 +1,6 @@
 //
 //  Settings.h
-//  v.2.1.1
+//  v.3.0
 //
 //  Created by Сергей Ваничкин on 19.08.16.
 //  Copyright © 2016 👽 Technology. All rights reserved.
@@ -61,7 +61,7 @@ typedef enum
 +(SettingsProxy *)application; // Только для этого приложения
 +(SettingsProxy *)device;      // Для appGroups на этом устройстве
 +(SettingsProxy *)all;         // Для Key-Value Storage на устройствах
-+(SettingsProxy *)keychain;    // Для связки ключей
++(SettingsProxy *)keychain;    // Для связки ключейht
 
 // Helpers
 +(NSData *)dataWithObject:(id)object;
@@ -76,9 +76,8 @@ typedef enum
 
 @property (nonatomic, assign, readonly) SettingsType type;
 
--(void)removeObjectForKey:(id)key;
--(id)objectForKey:(id)key;
--(void)setObject:(id)object
-          forKey:(id)key;
+-(id)objectForKeyedSubscript:(NSString *)key;
+-(void) setObject:(id        )object
+forKeyedSubscript:(NSString *)key;
 
 @end

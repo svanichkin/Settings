@@ -1,6 +1,6 @@
 //
 //  Settings.m
-//  v.2.1.1
+//  v.3.0
 //
 //  Created by Сергей Ваничкин on 19.08.16.
 //  Copyright © 2016 👽 Technology. All rights reserved.
