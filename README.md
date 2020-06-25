@@ -7,7 +7,9 @@ Under the hood, work with NSUserDefaults (locally and with AppGroups), NSUbiquit
 
 Keychain storage:
 ```
-Settings.keychain[@"Login"]= @"Password";
+Settings.keychain[@"MyLogin"] = @"MyPassword";
+
+NSString *myPassword = Settings.keychain[@"MyLogin"]
 ```
 
 Sharing between applications on device, or plugins on application:
