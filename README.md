@@ -7,23 +7,23 @@ Under the hood, work with NSUserDefaults (locally and with AppGroups), NSUbiquit
 
 Keychain storage:
 ```
-[Settings.keychain setObject:@"12345" forKey:@"Password"];
+Settings.keychain[@"Login"]= @"Password";
 ```
 
 Sharing between applications on device, or plugins on application:
 ```
 Settings.deviceAppGroup = @"group.com.application.test";
-[Settings.device setObject:@"TestDeviceAndPluginsSharing" forKey:@"TestKey"];
+Settings.device[@"TestKey"] = @"TestDeviceAndPluginsSharing";
 ```
 
 Local storage:
 ```
-[Settings.application setObject:@"LocalData" forKey:@"LocalTestKey"];
+Settings.application[@"LocalTestKey"] = @"LocalData";
 ```
 
 All user devices sharing:
 ```
-[Settings.all setObject:@"AllUserDevicesData" forKey:@"AllKey"];
+Settings.all[@"AllKey"] = @"AllUserDevicesData";
 ``` 
 
 "all" saves keys in Key-Value Storage, which should be included in the target, you must also specify the name of the group in entitlements.
