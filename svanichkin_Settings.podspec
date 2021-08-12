@@ -1,5 +1,5 @@
 #
-#  Be sure to run `pod spec lint Alert.podspec' to ensure this is a
+#  Be sure to run `pod spec lint Settings.podspec' to ensure this is a
 #  valid spec and to remove all comments including this before submitting the spec.
 #
 #  To learn more about Podspec attributes see https://guides.cocoapods.org/syntax/podspec.html
@@ -15,9 +15,9 @@ Pod::Spec.new do |spec|
   #  summary should be tweet-length, and the description more in depth.
   #
 
-  spec.name         = "svanichkin_Alert"
-  spec.version      = "3.2.1"
-  spec.summary      = "Class for easy creation of alerts. Errors, actions, etc."
+  spec.name         = "svanichkin_Settings"
+  spec.version      = "3.0.0"
+  spec.summary      = "Utility class for conveniently getting iOS system functions."
 
   # This description is used to generate tags and improve search results.
   #   * Think: What does it do? Why did you write it? What is the focus?
@@ -25,10 +25,10 @@ Pod::Spec.new do |spec|
   #   * Write the description between the DESC delimiters below.
   #   * Finally, don't worry about the indent, CocoaPods strips it!
   spec.description  = <<-DESC
-  This class is designed to facilitate the creation of alert windows. The class allows you to create alerts anywhere in the code, with buttons, with built-in translations for buttons. Allows you to create action sheets in the same convenient way. Controls pressing of buttons in the form of a block.
+  Settings is a class that allows you to work immediately with all local storage systems in a simple and convenient wrapper.
                    DESC
 
-  spec.homepage     = "https://github.com/svanichkin/Alert"
+  spec.homepage     = "https://github.com/svanichkin/Settings"
   # spec.screenshots  = "www.example.com/screenshots_1.gif", "www.example.com/screenshots_2.gif"
 
 
@@ -80,7 +80,7 @@ Pod::Spec.new do |spec|
   #  Supports git, hg, bzr, svn and HTTP.
   #
 
-  spec.source       = { :git => "https://github.com/svanichkin/Alert.git", :tag => "#{spec.version}" }
+  spec.source       = { :git => "https://github.com/svanichkin/Settings.git", :tag => "#{spec.version}" }
 
 
   # ――― Source Code ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
