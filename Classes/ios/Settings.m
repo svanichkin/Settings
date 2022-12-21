@@ -1,6 +1,6 @@
 //
 //  Settings.m
-//  v.4.1
+//  v.4.2
 //
 //  Created by Sergey Vanichkin on 19.08.16.
 //  Copyright © 2016 Sergey Vanichkin. All rights reserved.
@@ -62,9 +62,9 @@ typedef enum
 +(nonnull instancetype)defaultKeychain;
 +(nonnull instancetype)defaultKeychainShare;
 
--(BOOL)removeObjectForKey:(id)key;
+-(void)removeObjectForKey:(id)key;
 -(id)objectForKey:(id)key;
--(BOOL)setObject:(id)object
+-(void)setObject:(id)object
           forKey:(id)key;
 
 @end
@@ -613,88 +613,86 @@ forKeyedSubscript:(NSString *)key
     CFBridgingRelease(data);
 }
 
--(BOOL)setObject:(id)object
+-(void)setObject:(id)object
           forKey:(id)key
 {
+    NSData *existedData =
+    [self dataForKey:key];
+    
     NSMutableDictionary *query =
     [self queryWithKey:key];
-            
-    //encode object
-    NSData *data = nil;
-    NSError *error = nil;
     
-    data =
-    [Settings dataWithObject:object];
-
-    //fail if object is invalid
-    NSAssert(!object || (object && data),
-             @"NSKeychain failed to encode object for key '%@', error: %@",
-             key,
-             error);
-
-    if (data)
+    // check for delete if obj nil
+    if (object == nil)
     {
-        //update values
-        NSMutableDictionary *update =
-        [@{(__bridge NSString *)kSecValueData: data} mutableCopy];
-        
-#if TARGET_OS_IPHONE || __MAC_OS_X_VERSION_MIN_REQUIRED >= __MAC_10_9
-        update[(__bridge NSString *)kSecAttrAccessible] =
-        (__bridge id)kSecAttrAccessibleWhenUnlocked;
-#endif
-        
-        //write data
-        OSStatus status = errSecSuccess;
-        if ([self dataForKey:key])
-        {
-            //there's already existing data for this key, update it
-            status =
-            SecItemUpdate((__bridge CFDictionaryRef)query,
-                          (__bridge CFDictionaryRef)update);
-        }
-        
-        else
-        {
-            //no existing data, add a new item
-            [query addEntriesFromDictionary:update];
-            status =
-            SecItemAdd ((__bridge CFDictionaryRef)query, NULL);
-        }
-        
-        if (status != errSecSuccess)
-        {
-            NSLog(@"NSKeychain failed to store data for key '%@', error: %ld",
-                  key,
-                  (long)status);
-            
-            return NO;
-        }
-    }
-    
-    else if (self[key])
-    {
-        //delete existing data
+        // if key data is nil, delete complete )
+        if (existedData == nil)
+            return;
         
         OSStatus status =
         SecItemDelete((__bridge CFDictionaryRef)query);
 
         if (status != errSecSuccess)
-        {
             NSLog(@"NSKeychain failed to delete data for key '%@', error: %ld",
                   key,
                   (long)status);
-            
-            return NO;
-        }
+        
+        return;
     }
     
-    return YES;
+    // add or update
+    NSData *data =
+    [Settings dataWithObject:object];
+    
+    if (data == nil)
+        return
+        NSLog (@"NSKeychain failed to encode object for key '%@'", key);
+    
+    // update values query
+    NSMutableDictionary *update = NSMutableDictionary.new;
+    
+    update[(__bridge NSString *)kSecValueData] = data;
+    
+    update[(__bridge NSString *)kSecAttrAccessible] =
+    (__bridge id)kSecAttrAccessibleWhenUnlocked;
+    
+    //write data
+    OSStatus status = errSecSuccess;
+    
+    //there's already existing data for this key, update it
+    if (existedData)
+    {
+        status =
+        SecItemUpdate((__bridge CFDictionaryRef)query,
+                      (__bridge CFDictionaryRef)update);
+        
+        if (status != errSecSuccess)
+            NSLog(@"NSKeychain failed to update data for key '%@', error: %ld",
+                  key,
+                  (long)status);
+        
+        return;
+    }
+    
+    //no existing data, add a new item
+    [query addEntriesFromDictionary:update];
+    
+    status =
+    SecItemAdd((__bridge CFDictionaryRef)query, NULL);
+    
+    if (status != errSecSuccess)
+        NSLog(@"NSKeychain failed to store data for key '%@', error: %ld",
+              key,
+              (long)status);
+        
+    return;
 }
 
--(BOOL)removeObjectForKey:(id)key
+-(void)removeObjectForKey:(id)key
 {
-    return
-    [self setObject:nil forKey:key];
+    [self
+     setObject:nil
+     forKey:key];
 }
 
 -(id)objectForKey:(id)key
@@ -702,32 +700,19 @@ forKeyedSubscript:(NSString *)key
     NSData *data =
     [self dataForKey:key];
     
+    id object = nil;
+    
     if (data)
-    {
-        id object = nil;
-        NSError *error = nil;
-        
         object =
         [Settings objectWithData:data];
-        
-        if (!object)
-             NSLog(@"NSKeychain failed to decode data for key '%@', error: %@",
-                   key,
-                   error);
-        
-        return
-        object;
-    }
-    
-    else
-        //no value found
-        return nil;
+
+    return
+    object;
 }
 
--(BOOL)setObject:(id)object
+-(void) setObject:(id)object
 forKeyedSubscript:(id)key
 {
-    return
     [self setObject:object
              forKey:key];
 }
@@ -739,6 +724,3 @@ forKeyedSubscript:(id)key
 }
 
 @end
-
-
-
