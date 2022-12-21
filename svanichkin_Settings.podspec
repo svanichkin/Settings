@@ -16,8 +16,8 @@ Pod::Spec.new do |spec|
   #
 
   spec.name         = "svanichkin_Settings"
-  spec.version      = "3.0.0"
-  spec.summary      = "Utility class for conveniently getting iOS system functions."
+  spec.version      = "4.0.0"
+  spec.summary      = "Utility iOS/macOS class wrapper for (UsersDefaults/Key-Value/Keychain)"
 
   # This description is used to generate tags and improve search results.
   #   * Think: What does it do? Why did you write it? What is the focus?
@@ -66,6 +66,7 @@ Pod::Spec.new do |spec|
 
   # spec.platform     = :ios
   spec.platform     = :ios, "13.0"
+  spec.platform     = :osx, "11.0"
 
   #  When using multiple platforms
   # spec.ios.deployment_target = "5.0"

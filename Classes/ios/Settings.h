@@ -1,6 +1,6 @@
 //
 //  Settings.h
-//  v.3.0
+//  v.4.0
 //
 //  Created by Sergey Vanichkin on 19.08.16.
 //  Copyright © 2016 Sergey Vanichkin. All rights reserved.
@@ -18,55 +18,137 @@
 //  limitations under the License.
 //
 //
-//  Sample
+//  Sample 1
+//  Save and load "Test" string to key with "TestKey" name
+//  this sample for local settings on current application
 //
+//  in app1 on user iphone
 //  [Settings.application setObject:@"Test" forKey:@"TestKey"];
 //
-//  [Settings.application objectForKey:@"TestKey"];
+//  in app1 on user iphone
+//  NSString *s = [Settings.application objectForKey:@"TestKey"];
 //
 //
-//  Similarly:
-//  device stores keys for the AppGroup specified in the Capability in the target.
-//  Causes an execution if no group is specified.
+//  Sample 2
+//  Save and load "Test" string to key with "TestKey" name
+//  this sample for local settings between one or more applications
 //
-//  keychain stores keys in a keychain.
+//  Go to Capability -> App Groups and Add new
 //
-//  all saves keys in Key-Value Storage, which should be included in the target, you also need to specify
-//  the name of the group in entitlements
+//  in app1 on user iphone
+//  [Settings.device setObject:@"Test" forKey:@"TestKey"];
 //
-//  Sample
-//  <key>com.apple.developer.ubiquity-kvstore-identifier</key>
-//  <string>9T111111W8.ru.project.AppName</string>
+//  in app2 OR app1 extention user iphone
+//  NSString *s = [Settings.device objectForKey:@"TestKey"];
 //
+//
+//  Sample 3
+//  Save and load "Test" string to key with "TestKey" name
+//  this sample for global settings between one or more user devices
+//  and current application (sync with iCloud)
+//
+//  Capability -> iCloud -> Key-Value storage and Enable
+//
+//  in app1 on user iphone
+//  [Settings.all setObject:@"Test" forKey:@"TestKey"];
+//
+//  in app1 on user ipad
+//  NSString *s = [Settings.all objectForKey:@"TestKey"];
+//
+//
+//  Sample 4
+//  Save and load "Test" string to key with "TestKey" name
+//  this sample for global settings between one or more user devices and
+//  between one or more application (sync with iCloud)
+//
+//  Capability -> iCloud -> Enable Key-Value storage
+//
+//  This action add string
+//  "<key>com.apple.developer.ubiquity-kvstore-identifier</key>" to
+//  entitlements project file "iCloud Key-Value Store"
+//  value for this key is "$(TeamIdentifierPrefix)$(CFBundleIdentifier)"
+//  sample somthing this: "9T111111W8.myOrganization.myProducName"
+//  add this key to entitlements in other your app for sharing
+//
+//  in app1 on user iphone
+//  [Settings.all setObject:@"Test" forKey:@"TestKey"];
+//
+//  in app2 on user ipad
+//  NSString *s = [Settings.all objectForKey:@"TestKey"];
+//
+//
+//  Sample 5
+//  Save and load "Test" string to key with "TestKey" name
+//  this sample for global keychain on all user devices with iCloud sync
+//
+//  Capability -> Keychain Sharing
+//
+//  in app1 on user iphone
+//  [Settings.keychain setObject:@"Test" forKey:@"TestKey"];
+//
+//  in app1 on user ipad
+//  NSString *s = [Settings.keychain objectForKey:@"TestKey"];
+//
+//
+//  Sample 6
+//  Save and load "Test" string to key with "TestKey" name
+//  this sample for global keychain on all user devices between applications with iCloud sync
+//
+//  Capability -> Keychain Sharing -> Add new group
+//
+//  in app1 on user iphone
+//  [Settings.keychainShare setObject:@"Test" forKey:@"TestKey"];
+//
+//  in app2 on user ipad
+//  NSString *s = [Settings.keychainShare objectForKey:@"TestKey"];
+
 
 #import <Foundation/Foundation.h>
 
-#define ALL_DATA_CHANGED @"AllDataChanged"
-#define DEV_DATA_CHANGED @"DevDataChanged"
 #define APP_DATA_CHANGED @"AppDataChanged"
+#define DEV_DATA_CHANGED @"DevDataChanged"
+#define ALL_DATA_CHANGED @"AllDataChanged"
 
 typedef enum
 {
-    SettingsTypeCurrentApplication,
-    SettingsTypeCurrentDeviceWithAppGroups,
-    SettingsTypeAllDevicesWithKeyValueStorage,
-    SettingsTypeKeychain
+    SettingsTypeApplication,   // NSUserDefaults
+    SettingsTypeDevice,        // NSUserDefault with group id
+    SettingsTypeAll,           // NSUbiquitousKeyValueStore (need enable iCloud Key-Value)
+    SettingsTypeKeychainLocal, // Keychain without iCloud sync
+    SettingsTypeKeychain,      // Keychain with iCloud sync (need enable Keychain Share)
+    SettingsTypeKeychainShare  // Keychain with iCloud sync and share group
 } SettingsType;
 
 @class SettingsProxy;
 
 @interface Settings : NSObject
 
-+(NSString *)deviceAppGroup;
-+(void)setDeviceAppGroup:(NSString *)appGroup; // Для iOS требуется установка вручную, для macCatalyst,
-                                               // или mac версий значение устанавливается автоматически
-                                               // и берется из entitlements
-                                               // Значение требуется для device.
+// Capability -> App Groups
+// Sharing between applications on one device OR
+// Sharing between app and extention with one app group id
++(NSString *)deviceGroupId;
++(void)setDeviceGroupId:(NSString *)appGroup;
+                                    
+// Capability -> iCloud -> Key-Value storage and Enable it then
+// add to entitlement key
+// "<key>com.apple.developer.ubiquity-kvstore-identifier</key>"
+// "$(TeamIdentifierPrefix)$(CFBundleIdentifier)"
+//  sample somthing this: "9T111111W8.myOrganization.myProducName"
+//  add this key to entitlements in other your app for sharing
++(NSString *)allGroupId;
+                       
+// Capability -> Keychain Sharing
+// Sharing between applications with one group id
++(NSString *)keychainGroupId;
++(void)setKeychainGroupId:(NSString *)group;
+                                        
 
-+(SettingsProxy *)application; // Только для этого приложения
-+(SettingsProxy *)device;      // Для appGroups на этом устройстве
-+(SettingsProxy *)all;         // Для Key-Value Storage на устройствах
-+(SettingsProxy *)keychain;    // Для связки ключей
++(SettingsProxy *)application;   // Local for this application
++(SettingsProxy *)device;        // Local on device for several applications by app group id
++(SettingsProxy *)all;           // Global for all user devices, for this application (sync by iCloud)
++(SettingsProxy *)keychainLocal; // Local keychain for this application
++(SettingsProxy *)keychain;      // Global keychain for all user devices, for this application
++(SettingsProxy *)keychainShare; // Global keychain for all user devices, for keychain share group
 
 // Helpers
 +(NSData *)dataWithObject:(id)object;

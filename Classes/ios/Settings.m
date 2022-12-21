@@ -1,6 +1,6 @@
 //
 //  Settings.m
-//  v.3.0
+//  v.4.0
 //
 //  Created by Sergey Vanichkin on 19.08.16.
 //  Copyright © 2016 Sergey Vanichkin. All rights reserved.
@@ -40,18 +40,13 @@ typedef enum
 -(BOOL)setObject:(id)object
           forKey:(id)key;
 
++(nonnull instancetype)defaultLocalKeychain;
 +(nonnull instancetype)defaultKeychain;
++(nonnull instancetype)defaultKeychainShare;
 
-@property (nonatomic, readonly, nullable) NSString *service;
-@property (nonatomic, readonly, nullable) NSString *accessGroup;
-@property (nonatomic, assign) NSKeychainAccess accessibility;
-
--(nonnull id)initWithService:(nullable NSString *)service
-                 accessGroup:(nullable NSString *)accessGroup
-               accessibility:(NSKeychainAccess)accessibility;
-
--(nonnull id)initWithService:(nullable NSString *)service
-                 accessGroup:(nullable NSString *)accessGroup;
+@property (nonatomic, assign) BOOL isLocal;
+@property (nonatomic, assign) BOOL isShare;
+@property (nonatomic, strong) NSString *keychainGroupId;
 
 @end
 
@@ -60,7 +55,9 @@ typedef enum
 @property (nonatomic, strong) NSUserDefaults            *application;
 @property (nonatomic, strong) NSUserDefaults            *device;
 @property (nonatomic, strong) NSUbiquitousKeyValueStore *all;
+@property (nonatomic, strong) Keychain                  *keychainLocal;
 @property (nonatomic, strong) Keychain                  *keychain;
+@property (nonatomic, strong) Keychain                  *keychainShare;
 
 @property (nonatomic, strong) id applicationObserver;
 @property (nonatomic, strong) id deviceObserver;
@@ -74,7 +71,7 @@ typedef enum
 {
     _type = type;
     
-    if (_type == SettingsTypeCurrentApplication)
+    if (_type == SettingsTypeApplication)
     {
         _application =
         NSUserDefaults.standardUserDefaults;
@@ -98,44 +95,35 @@ typedef enum
             }];
     }
     
-    else if (_type == SettingsTypeCurrentDeviceWithAppGroups)
+    else if (_type == SettingsTypeDevice)
     {
         // Declare the private SecTask functions in your header file
-        void* (SecTaskCopyValueForEntitlement)(void* task, CFStringRef entitlement, CFErrorRef  _Nullable *error);
-        void* (SecTaskCreateFromSelf)(CFAllocatorRef allocator);
+#if TARGET_OS_IPHONE
+        void *(SecTaskCopyValueForEntitlement)(void *task, CFStringRef entitlement, CFErrorRef _Nullable *error);
+        void *(SecTaskCreateFromSelf)(CFAllocatorRef allocator);
+#endif
+        
+        // Auto get group id if need
+        if (Settings.deviceGroupId.length == 0)
+        {
+            NSArray *groups = (__bridge NSArray *)(SecTaskCopyValueForEntitlement(SecTaskCreateFromSelf(NULL), CFSTR("com.apple.security.application-groups"), NULL));
+            
+            Settings.deviceGroupId =
+            groups.firstObject;
+        
+            if (Settings.deviceGroupId.length == 0)
+            {
+                [NSException
+                 raise:@"appGrpoups not found"
+                 format:@"Add appGroups in target Capability. Capability -> App Groups"];
                 
-        #if !TARGET_OS_IPHONE
-        CFErrorRef err = nil;
-        NSArray *groups = (__bridge NSArray *)(SecTaskCopyValueForEntitlement(SecTaskCreateFromSelf(NULL), CFSTR("com.apple.security.application-groups"), &err));
-        
-        if (groups.count == 0)
-        {
-            [NSException
-             raise:@"appGrpoups not found"
-             format:@"Add appGroups in target Capability."];
-            
-            return;
+                return;
+            }
         }
-        
-        Settings.deviceAppGroup =
-        groups.firstObject;
         
         _device =
         [NSUserDefaults.alloc
-         initWithSuiteName:groups.firstObject];
-        #else
-        if (Settings.deviceAppGroup.length == 0)
-        {
-            [NSException
-             raise:@"appGrpoups not found"
-             format:@"Add appGroups in target Capability."];
-            
-            return;
-        }
-        _device =
-        [NSUserDefaults.alloc
-         initWithSuiteName:Settings.deviceAppGroup];
-        #endif
+         initWithSuiteName:Settings.deviceGroupId];
             
         if (self.deviceObserver)
             self.deviceObserver =
@@ -156,7 +144,7 @@ typedef enum
             }];
     }
     
-    else if (_type == SettingsTypeAllDevicesWithKeyValueStorage)
+    else if (_type == SettingsTypeAll)
     {
         _all =
         NSUbiquitousKeyValueStore.defaultStore;
@@ -177,40 +165,85 @@ typedef enum
         [_all synchronize];
     }
     
+    else if (_type == SettingsTypeKeychainLocal)
+    {
+        _keychainLocal =
+        Keychain.defaultLocalKeychain;
+    }
+    
     else if (_type == SettingsTypeKeychain)
     {
         _keychain =
         Keychain.defaultKeychain;
     }
+        
+    else if (_type == SettingsTypeKeychainShare)
+    {
+#if TARGET_OS_IPHONE
+        // Declare the private SecTask functions in your header file
+        void *(SecTaskCopyValueForEntitlement)(void *task, CFStringRef entitlement, CFErrorRef _Nullable *error);
+        void *(SecTaskCreateFromSelf)(CFAllocatorRef allocator);
+#endif
+        
+        // Auto get group id if need
+        if (Settings.keychainGroupId.length == 0)
+        {
+            NSArray *groups = (__bridge NSArray *)(SecTaskCopyValueForEntitlement(SecTaskCreateFromSelf(NULL), CFSTR("keychain-access-groups"), NULL));
+            
+            Settings.keychainGroupId =
+            groups.firstObject;
+        
+            if (Settings.keychainGroupId.length == 0)
+            {
+                [NSException
+                 raise:@"keychainGrpoups not found"
+                 format:@"Add Keychain Sharing Groups in target Capability. Capability -> Keychain Sharing"];
+                
+                return;
+            }
+        }
+        
+        _keychainShare =
+        Keychain.defaultKeychainShare;
+        
+        _keychainShare.keychainGroupId =
+        Settings.keychainGroupId;
+    }
 }
 
 -(void)removeObjectForKey:(id)key
 {
-    if (_type == SettingsTypeCurrentApplication)
+    if (_type == SettingsTypeApplication)
     {
         [self.application removeObjectForKey:key];
         [self.application synchronize];
     }
     
-    else if (_type == SettingsTypeCurrentDeviceWithAppGroups)
+    else if (_type == SettingsTypeDevice)
     {
         [self.device removeObjectForKey:key];
         [self.device synchronize];
     }
     
-    else if (_type == SettingsTypeAllDevicesWithKeyValueStorage)
+    else if (_type == SettingsTypeAll)
     {
         [self.all removeObjectForKey:key];
         [self.all synchronize];
     }
     
+    else if (_type == SettingsTypeKeychainLocal)
+        [self.keychainLocal removeObjectForKey:key];
+    
     else if (_type == SettingsTypeKeychain)
         [self.keychain removeObjectForKey:key];
+    
+    else if (_type == SettingsTypeKeychainShare)
+        [self.keychainShare removeObjectForKey:key];
 }
 
 -(id)objectForKey:(id)key
 {
-    if (_type == SettingsTypeCurrentApplication)
+    if (_type == SettingsTypeApplication)
     {
         [self.application synchronize];
         
@@ -218,7 +251,7 @@ typedef enum
         [self.application objectForKey:key];
     }
     
-    else if (_type == SettingsTypeCurrentDeviceWithAppGroups)
+    else if (_type == SettingsTypeDevice)
     {
         [self.device synchronize];
         
@@ -226,7 +259,7 @@ typedef enum
         [self.device objectForKey:key];
     }
     
-    else if (_type == SettingsTypeAllDevicesWithKeyValueStorage)
+    else if (_type == SettingsTypeAll)
     {
         [self.all synchronize];
         
@@ -234,9 +267,17 @@ typedef enum
         [self.all objectForKey:key];
     }
     
+    else if (_type == SettingsTypeKeychainLocal)
+        return
+        [self.keychainLocal objectForKey:key];
+    
     else if (_type == SettingsTypeKeychain)
         return
         [self.keychain objectForKey:key];
+    
+    else if (_type == SettingsTypeKeychainShare)
+        return
+        [self.keychainShare objectForKey:key];
     
     return nil;
 }
@@ -244,17 +285,17 @@ typedef enum
 -(void)setObject:(id)object
           forKey:(id)key
 {
-    if (_type == SettingsTypeCurrentApplication)
+    if (_type == SettingsTypeApplication)
         [self.application
          setObject:object
          forKey:key];
     
-    else if (_type == SettingsTypeCurrentDeviceWithAppGroups)
+    else if (_type == SettingsTypeDevice)
         [self.device
          setObject:object
          forKey:key];
 
-    else if (_type == SettingsTypeAllDevicesWithKeyValueStorage)
+    else if (_type == SettingsTypeAll)
     {
         [self.all
          setObject:object
@@ -263,8 +304,18 @@ typedef enum
         [self.all synchronize];
     }
     
+    else if (_type == SettingsTypeKeychainLocal)
+        [self.keychainLocal
+         setObject:object
+         forKey:key];
+    
     else if (_type == SettingsTypeKeychain)
         [self.keychain
+         setObject:object
+         forKey:key];
+    
+    else if (_type == SettingsTypeKeychainShare)
+        [self.keychainShare
          setObject:object
          forKey:key];
 }
@@ -290,8 +341,11 @@ forKeyedSubscript:(NSString *)key
 @property (nonatomic, strong) SettingsProxy *application;
 @property (nonatomic, strong) SettingsProxy *device;
 @property (nonatomic, strong) SettingsProxy *all;
+@property (nonatomic, strong) SettingsProxy *keychainLocal;
 @property (nonatomic, strong) SettingsProxy *keychain;
-@property (nonatomic, strong) NSString      *appGroup;
+@property (nonatomic, strong) SettingsProxy *keychainShare;
+@property (nonatomic, strong) NSString      *deviceGroupId;
+@property (nonatomic, strong) NSString      *keychainGroupId;
 
 @end
 
@@ -310,16 +364,40 @@ forKeyedSubscript:(NSString *)key
     return _storage;
 }
 
-+(void)setDeviceAppGroup:(NSString *)appGroup
++(void)setDeviceGroupId:(NSString *)appGroupId
 {
-    Settings.storage.appGroup = appGroup;
+    Settings.storage.deviceGroupId = appGroupId;
 }
 
-+(NSString *)deviceAppGroup
++(NSString *)deviceGroupId
 {
     return
-    Settings.storage.appGroup;
+    Settings.storage.deviceGroupId;
 }
+
++(NSString *)allGroupId
+{
+#if TARGET_OS_IPHONE
+    void *(SecTaskCopyValueForEntitlement)(void *task, CFStringRef entitlement, CFErrorRef _Nullable *error);
+    void *(SecTaskCreateFromSelf)(CFAllocatorRef allocator);
+#endif
+    
+    NSArray *groups = (__bridge NSArray *)(SecTaskCopyValueForEntitlement(SecTaskCreateFromSelf(NULL), CFSTR("com.apple.developer.ubiquity-kvstore-identifier"), NULL));
+    
+    return groups.firstObject;
+}
+
++(void)setKeychainGroupId:(NSString *)groupId
+{
+    Settings.storage.keychainGroupId = groupId;
+}
+
++(NSString *)keychainGroupId
+{
+    return
+    Settings.storage.keychainGroupId;
+}
+
 
 +(SettingsProxy *)application
 {
@@ -327,7 +405,7 @@ forKeyedSubscript:(NSString *)key
     {
         SettingsProxy *proxy = SettingsProxy.new;
         
-        proxy.type = SettingsTypeCurrentApplication;
+        proxy.type = SettingsTypeApplication;
         
         Settings.storage.application = proxy;
     }
@@ -342,7 +420,7 @@ forKeyedSubscript:(NSString *)key
     {
         SettingsProxy *proxy = SettingsProxy.new;
         
-        proxy.type = SettingsTypeCurrentDeviceWithAppGroups;
+        proxy.type = SettingsTypeDevice;
         
         Settings.storage.device = proxy;
     }
@@ -357,13 +435,28 @@ forKeyedSubscript:(NSString *)key
     {
         SettingsProxy *proxy = SettingsProxy.new;
         
-        proxy.type = SettingsTypeAllDevicesWithKeyValueStorage;
+        proxy.type = SettingsTypeAll;
         
         Settings.storage.all = proxy;
     }
     
     return
     Settings.storage.all;
+}
+
++(SettingsProxy *)keychainLocal
+{
+    if (Settings.storage.keychainLocal == nil)
+    {
+        SettingsProxy *proxy = SettingsProxy.new;
+        
+        proxy.type = SettingsTypeKeychainLocal;
+        
+        Settings.storage.keychainLocal = proxy;
+    }
+        
+    return
+    Settings.storage.keychainLocal;
 }
 
 +(SettingsProxy *)keychain
@@ -381,6 +474,21 @@ forKeyedSubscript:(NSString *)key
     Settings.storage.keychain;
 }
 
++(SettingsProxy *)keychainShare
+{
+    if (Settings.storage.keychainShare == nil)
+    {
+        SettingsProxy *proxy = SettingsProxy.new;
+        
+        proxy.type = SettingsTypeKeychainShare;
+        
+        Settings.storage.keychainShare = proxy;
+    }
+        
+    return
+    Settings.storage.keychainShare;
+}
+
 // Helpers
 +(NSData *)dataWithObject:(id)object
 {
@@ -396,154 +504,66 @@ forKeyedSubscript:(NSString *)key
 
 @end
 
-@implementation NSObject (NSKeychainPropertyListCoding)
-
--(id)NSKeychain_propertyListRepresentation
-{
-    return
-    self;
-}
-
-@end
-
-#ifndef NSKEYCHAIN_USE_NSCODING
-#if TARGET_OS_IPHONE
-#define NSKEYCHAIN_USE_NSCODING 1
-#else
-#define NSKEYCHAIN_USE_NSCODING 0
-#endif
-#endif
-
-#if !NSKEYCHAIN_USE_NSCODING
-
-@implementation NSNull (NSKeychainPropertyListCoding)
-
--(id)NSKeychain_propertyListRepresentation
-{
-    return
-    nil;
-}
-
-@end
-
-@implementation NSArray (BMPropertyListCoding)
-
--(id)NSKeychain_propertyListRepresentation
-{
-    NSMutableArray *copy =
-    [NSMutableArray arrayWithCapacity:[self count]];
-    
-    for (id obj in self)
-    {
-        id value =
-        [obj NSKeychain_propertyListRepresentation];
-        
-        if (value)
-            [copy addObject:value];
-    }
-    
-    return
-    copy;
-}
-
-@end
-
-@implementation NSDictionary (BMPropertyListCoding)
-
--(id)NSKeychain_propertyListRepresentation
-{
-    NSMutableDictionary *copy =
-    [NSMutableDictionary
-     dictionaryWithCapacity:[self count]];
-    
-    [self
-     enumerateKeysAndObjectsUsingBlock:^(__unsafe_unretained id key,
-                                         __unsafe_unretained id obj,
-                                         __unused         BOOL *stop)
-    {
-        id value =
-        [obj NSKeychain_propertyListRepresentation];
-        
-        if (value)
-            copy[key] =
-            value;
-    }];
-    
-    return
-    copy;
-}
-
-@end
-#endif
-
 @implementation Keychain
 
-+(instancetype)defaultKeychain
++(instancetype)defaultLocalKeychain
 {
-    static id sharedInstance = nil;
+    static Keychain *sharedInstance = nil;
     static dispatch_once_t onceToken;
     
     dispatch_once(&onceToken, ^
     {
-        NSString *bundleID =
-        [NSBundle.mainBundle
-         objectForInfoDictionaryKey:(NSString *)kCFBundleIdentifierKey];
-        
         sharedInstance =
-        [Keychain.alloc
-         initWithService:bundleID
-         accessGroup:nil];
+        Keychain.new;
+        
+        sharedInstance.isLocal = YES;
     });
 
     return
     sharedInstance;
 }
 
--(id)init
++(instancetype)defaultKeychain
 {
-    return
-    [self
-     initWithService:nil
-     accessGroup:NSBundle.mainBundle.bundleIdentifier];
-}
-
--(id)initWithService:(NSString *)service
-         accessGroup:(NSString *)accessGroup
-{
-    return
-    [self
-     initWithService:service
-     accessGroup:accessGroup
-     accessibility:NSKeychainAccessibleWhenUnlocked];
-}
-
--(id)initWithService:(NSString *)service
-         accessGroup:(NSString *)accessGroup
-       accessibility:(NSKeychainAccess)accessibility
-{
-    if ((self = [super init]))
+    static Keychain *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    
+    dispatch_once(&onceToken, ^
     {
-        _service =
-        [service copy];
-        
-        _accessGroup =
-        [accessGroup copy];
-        
-        _accessibility =
-        accessibility;
-    }
-    return self;
+        sharedInstance =
+        Keychain.new;
+    });
+
+    return
+    sharedInstance;
 }
 
--(NSData *)dataForKey:(id)key
++(instancetype)defaultKeychainShare
+{
+    static Keychain *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    
+    dispatch_once(&onceToken, ^
+    {
+        sharedInstance =
+        Keychain.new;
+        
+        sharedInstance.isShare = YES;
+    });
+
+    return
+    sharedInstance;
+}
+
+-(NSMutableDictionary *)query
 {
     //generate query
     NSMutableDictionary *query =
     NSMutableDictionary.new;
     
-    if ([self.service length])
+    if (self.isShare == NO)
         query[(__bridge NSString *)kSecAttrService] =
-        self.service;
+        NSBundle.mainBundle.bundleIdentifier;
     
     query[(__bridge NSString *)kSecClass] =
     (__bridge id)kSecClassGenericPassword;
@@ -554,16 +574,22 @@ forKeyedSubscript:(NSString *)key
     query[(__bridge NSString *)kSecReturnData] =
     (__bridge id)kCFBooleanTrue;
     
+    query[(__bridge NSString *)kSecAttrSynchronizable] =
+    (__bridge id _Nullable)(self.isLocal == YES ? kCFBooleanFalse : kCFBooleanTrue);
+    
+    if (self.isShare)
+        query[(__bridge NSString *)kSecAttrAccessGroup] = self.keychainGroupId;
+    
+    return query;
+}
+
+-(NSData *)dataForKey:(id)key
+{
+    NSMutableDictionary *query =
+    self.query;
+    
     query[(__bridge NSString *)kSecAttrAccount] =
     [key description];
-
-#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
-    
-    if ([_accessGroup length])
-        query[(__bridge NSString *)kSecAttrAccessGroup] =
-        _accessGroup;
-    
-#endif
     
     //recover data
     CFDataRef data =
@@ -585,61 +611,18 @@ forKeyedSubscript:(NSString *)key
 -(BOOL)setObject:(id)object
           forKey:(id)key
 {
-    //generate query
     NSMutableDictionary *query =
-    NSMutableDictionary.new;
-    
-    if ([self.service length])
-        query[(__bridge NSString *)kSecAttrService] =
-        self.service;
-    
-    query[(__bridge NSString *)kSecClass] =
-    (__bridge id)kSecClassGenericPassword;
+    self.query;
     
     query[(__bridge NSString *)kSecAttrAccount] =
     [key description];
-    
-#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
-    if ([_accessGroup length])
-        query[(__bridge NSString *)kSecAttrAccessGroup] =
-        _accessGroup;
-#endif
-    
+        
     //encode object
     NSData *data = nil;
     NSError *error = nil;
     
-    if ([(id)object isKindOfClass:[NSString class]])
-    {
-        //check that string data does not represent a binary plist
-        NSPropertyListFormat format = NSPropertyListBinaryFormat_v1_0;
-        
-        if (![object hasPrefix:@"bplist"] ||
-            ![NSPropertyListSerialization
-              propertyListWithData:[object dataUsingEncoding:NSUTF8StringEncoding]
-              options:NSPropertyListImmutable
-              format:&format
-              error:NULL])
-            //safe to encode as a string
-            data = [object dataUsingEncoding:NSUTF8StringEncoding];
-    }
-    
-    //if not encoded as a string, encode as plist
-    if (object && !data)
-    {
-        data =
-        [NSPropertyListSerialization
-         dataWithPropertyList:[object NSKeychain_propertyListRepresentation]
-         format:NSPropertyListBinaryFormat_v1_0
-         options:0
-         error:&error];
-#if NSKEYCHAIN_USE_NSCODING
-        //property list encoding failed. try NSCoding
-        if (!data)
-            data =
-            [NSKeyedArchiver archivedDataWithRootObject:object];
-#endif
-    }
+    data =
+    [NSKeyedArchiver archivedDataWithRootObject:object];
 
     //fail if object is invalid
     NSAssert(!object || (object && data),
@@ -660,7 +643,7 @@ forKeyedSubscript:(NSString *)key
           (__bridge id)kSecAttrAccessibleAfterFirstUnlock,
           (__bridge id)kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
           (__bridge id)kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]
-        [self.accessibility];
+        [NSKeychainAccessibleWhenUnlocked];
 #endif
         
         //write data
@@ -695,27 +678,9 @@ forKeyedSubscript:(NSString *)key
     {
         //delete existing data
         
-#if TARGET_OS_IPHONE
-        
         OSStatus status =
         SecItemDelete((__bridge CFDictionaryRef)query);
-#else
-        CFTypeRef result = NULL;
-        
-        query[(__bridge id)kSecReturnRef] =
-        (__bridge id)kCFBooleanTrue;
-        
-        OSStatus status =
-        SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
-        
-        if (status == errSecSuccess)
-        {
-            status =
-            SecKeychainItemDelete((SecKeychainItemRef) result);
-            
-            CFRelease(result);
-        }
-#endif
+
         if (status != errSecSuccess)
         {
             NSLog(@"NSKeychain failed to delete data for key '%@', error: %ld",
@@ -745,45 +710,8 @@ forKeyedSubscript:(NSString *)key
         id object = nil;
         NSError *error = nil;
         
-        NSPropertyListFormat format =
-        NSPropertyListBinaryFormat_v1_0;
-        
-        //check if data is a binary plist
-        if ([data length] >= 6 &&
-            !strncmp("bplist", data.bytes, 6))
-        {
-            //attempt to decode as a plist
-            object =
-            [NSPropertyListSerialization
-             propertyListWithData:data
-             options:NSPropertyListImmutable
-             format:&format
-             error:&error];
-            
-            if ([object respondsToSelector:@selector(objectForKey:)] &&
-                [(NSDictionary *)object objectForKey:@"$archiver"])
-            {
-                //data represents an NSCoded archive
-                
-    #if NSKEYCHAIN_USE_NSCODING
-                
-                //parse as archive
-                object =
-                [NSKeyedUnarchiver unarchiveObjectWithData:data];
-    #else
-                //don't trust it
-                object = nil;
-    #endif
-                
-            }
-        }
-        
-        if (!object || format != NSPropertyListBinaryFormat_v1_0)
-            //may be a string
-            object =
-            [NSString.alloc
-             initWithData:data
-             encoding:NSUTF8StringEncoding];
+        object =
+        [NSKeyedUnarchiver unarchiveObjectWithData:data];
         
         if (!object)
              NSLog(@"NSKeychain failed to decode data for key '%@', error: %@",
