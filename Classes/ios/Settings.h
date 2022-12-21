@@ -1,6 +1,6 @@
 //
 //  Settings.h
-//  v.4.3
+//  v.4.4
 //
 //  Created by Sergey Vanichkin on 19.08.16.
 //  Copyright © 2016 Sergey Vanichkin. All rights reserved.
