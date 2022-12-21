@@ -1,6 +1,6 @@
 //
 //  Settings.m
-//  v.4.0
+//  v.4.1
 //
 //  Created by Sergey Vanichkin on 19.08.16.
 //  Copyright © 2016 Sergey Vanichkin. All rights reserved.
@@ -27,26 +27,45 @@
 
 typedef enum
 {
-    NSKeychainAccessibleWhenUnlocked = 0,
-    NSKeychainAccessibleAfterFirstUnlock,
-    NSKeychainAccessibleWhenUnlockedThisDeviceOnly,
-    NSKeychainAccessibleAfterFirstUnlockThisDeviceOnly
-} NSKeychainAccess;
+    SettingsTypeApplication,   // NSUserDefaults
+    SettingsTypeDevice,        // NSUserDefault with group id
+    SettingsTypeAll,           // NSUbiquitousKeyValueStore (need enable iCloud Key-Value)
+    SettingsTypeKeychainLocal, // Keychain without iCloud sync
+    SettingsTypeKeychain,      // Keychain with iCloud sync (need enable Keychain Share)
+    SettingsTypeKeychainShare  // Keychain with iCloud sync and share group
+} SettingsType;
+
+@interface Settings ()
+
+@property (nonatomic, strong) SettingsProxy *application;
+@property (nonatomic, strong) SettingsProxy *device;
+@property (nonatomic, strong) SettingsProxy *all;
+@property (nonatomic, strong) SettingsProxy *keychainLocal;
+@property (nonatomic, strong) SettingsProxy *keychain;
+@property (nonatomic, strong) SettingsProxy *keychainShare;
+@property (nonatomic, strong) NSString      *deviceGroupId;
+@property (nonatomic, strong) NSString      *keychainGroupId;
+
+@end
+
+@interface Keychain : NSObject
+@end
 
 @interface Keychain ()
 
--(BOOL)removeObjectForKey:(id)key;
--(id)objectForKey:(id)key;
--(BOOL)setObject:(id)object
-          forKey:(id)key;
+@property (nonatomic, assign) BOOL isLocal;
+@property (nonatomic, assign) BOOL isShare;
+
+@property (nonatomic, strong) NSString *keychainGroupId;
 
 +(nonnull instancetype)defaultLocalKeychain;
 +(nonnull instancetype)defaultKeychain;
 +(nonnull instancetype)defaultKeychainShare;
 
-@property (nonatomic, assign) BOOL isLocal;
-@property (nonatomic, assign) BOOL isShare;
-@property (nonatomic, strong) NSString *keychainGroupId;
+-(BOOL)removeObjectForKey:(id)key;
+-(id)objectForKey:(id)key;
+-(BOOL)setObject:(id)object
+          forKey:(id)key;
 
 @end
 
@@ -62,6 +81,8 @@ typedef enum
 @property (nonatomic, strong) id applicationObserver;
 @property (nonatomic, strong) id deviceObserver;
 @property (nonatomic, strong) id allObserver;
+
+@property (nonatomic, assign, readonly) SettingsType type;
 
 @end
 
@@ -336,19 +357,6 @@ forKeyedSubscript:(NSString *)key
 
 @end
 
-@interface Settings ()
-
-@property (nonatomic, strong) SettingsProxy *application;
-@property (nonatomic, strong) SettingsProxy *device;
-@property (nonatomic, strong) SettingsProxy *all;
-@property (nonatomic, strong) SettingsProxy *keychainLocal;
-@property (nonatomic, strong) SettingsProxy *keychain;
-@property (nonatomic, strong) SettingsProxy *keychainShare;
-@property (nonatomic, strong) NSString      *deviceGroupId;
-@property (nonatomic, strong) NSString      *keychainGroupId;
-
-@end
-
 @implementation Settings
 
 +(instancetype)storage
@@ -493,73 +501,72 @@ forKeyedSubscript:(NSString *)key
 +(NSData *)dataWithObject:(id)object
 {
     return
-    [NSKeyedArchiver archivedDataWithRootObject:object];
+    [NSKeyedArchiver
+     archivedDataWithRootObject:object
+     requiringSecureCoding:YES
+     error:nil];
 }
 
 +(id)objectWithData:(NSData *)data
 {
+//    NSSet *classes =
+//    [NSSet setWithArray:@[NSArray.class, NSMutableArray.class, NSSet.class, NSMutableSet.class, NSDictionary.class, NSMutableDictionary.class, NSNumber.class, NSMutable]];
+//    return
+//    [NSKeyedUnarchiver
+//     unarchivedObjectOfClasses:classes
+//     fromData:data
+//     error:nil];
+    
     return
-    [NSKeyedUnarchiver unarchiveObjectWithData:data];
+    [NSKeyedUnarchiver
+     unarchiveObjectWithData:data];
 }
 
 @end
 
 @implementation Keychain
 
+-(instancetype)initWithLocal:(BOOL)local
+                       share:(BOOL)share
+{
+    if (self = [super init])
+    {
+        self.isLocal = local;
+        self.isShare = share;
+    }
+    return self;
+}
+
 +(instancetype)defaultLocalKeychain
 {
-    static Keychain *sharedInstance = nil;
-    static dispatch_once_t onceToken;
-    
-    dispatch_once(&onceToken, ^
-    {
-        sharedInstance =
-        Keychain.new;
-        
-        sharedInstance.isLocal = YES;
-    });
-
     return
-    sharedInstance;
+    [Keychain.alloc
+     initWithLocal:YES
+     share:NO];
 }
 
 +(instancetype)defaultKeychain
 {
-    static Keychain *sharedInstance = nil;
-    static dispatch_once_t onceToken;
-    
-    dispatch_once(&onceToken, ^
-    {
-        sharedInstance =
-        Keychain.new;
-    });
-
     return
-    sharedInstance;
+    Keychain.new;
 }
 
 +(instancetype)defaultKeychainShare
 {
-    static Keychain *sharedInstance = nil;
-    static dispatch_once_t onceToken;
-    
-    dispatch_once(&onceToken, ^
-    {
-        sharedInstance =
-        Keychain.new;
-        
-        sharedInstance.isShare = YES;
-    });
-
     return
-    sharedInstance;
+    [Keychain.alloc
+     initWithLocal:NO
+     share:YES];
 }
 
--(NSMutableDictionary *)query
+-(NSMutableDictionary *)queryWithKey:(id)key
 {
     //generate query
     NSMutableDictionary *query =
     NSMutableDictionary.new;
+    
+    query[(__bridge NSString *)kSecAttrAccount] =
+    [key description];
     
     if (self.isShare == NO)
         query[(__bridge NSString *)kSecAttrService] =
@@ -567,18 +574,13 @@ forKeyedSubscript:(NSString *)key
     
     query[(__bridge NSString *)kSecClass] =
     (__bridge id)kSecClassGenericPassword;
-    
-    query[(__bridge NSString *)kSecMatchLimit] =
-    (__bridge id)kSecMatchLimitOne;
-    
-    query[(__bridge NSString *)kSecReturnData] =
-    (__bridge id)kCFBooleanTrue;
-    
+        
     query[(__bridge NSString *)kSecAttrSynchronizable] =
-    (__bridge id _Nullable)(self.isLocal == YES ? kCFBooleanFalse : kCFBooleanTrue);
+    (__bridge id)(self.isLocal ? kCFBooleanFalse : kCFBooleanTrue);
     
     if (self.isShare)
-        query[(__bridge NSString *)kSecAttrAccessGroup] = self.keychainGroupId;
+        query[(__bridge NSString *)kSecAttrAccessGroup] =
+        self.keychainGroupId;
     
     return query;
 }
@@ -586,10 +588,13 @@ forKeyedSubscript:(NSString *)key
 -(NSData *)dataForKey:(id)key
 {
     NSMutableDictionary *query =
-    self.query;
+    [self queryWithKey:key];
     
-    query[(__bridge NSString *)kSecAttrAccount] =
-    [key description];
+    query[(__bridge NSString *)kSecMatchLimit] =
+    (__bridge id)kSecMatchLimitOne;
+    
+    query[(__bridge NSString *)kSecReturnData] =
+    (__bridge id)kCFBooleanTrue;
     
     //recover data
     CFDataRef data =
@@ -612,17 +617,14 @@ forKeyedSubscript:(NSString *)key
           forKey:(id)key
 {
     NSMutableDictionary *query =
-    self.query;
-    
-    query[(__bridge NSString *)kSecAttrAccount] =
-    [key description];
-        
+    [self queryWithKey:key];
+            
     //encode object
     NSData *data = nil;
     NSError *error = nil;
     
     data =
-    [NSKeyedArchiver archivedDataWithRootObject:object];
+    [Settings dataWithObject:object];
 
     //fail if object is invalid
     NSAssert(!object || (object && data),
@@ -637,13 +639,8 @@ forKeyedSubscript:(NSString *)key
         [@{(__bridge NSString *)kSecValueData: data} mutableCopy];
         
 #if TARGET_OS_IPHONE || __MAC_OS_X_VERSION_MIN_REQUIRED >= __MAC_10_9
-        
         update[(__bridge NSString *)kSecAttrAccessible] =
-        @[(__bridge id)kSecAttrAccessibleWhenUnlocked,
-          (__bridge id)kSecAttrAccessibleAfterFirstUnlock,
-          (__bridge id)kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-          (__bridge id)kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]
-        [NSKeychainAccessibleWhenUnlocked];
+        (__bridge id)kSecAttrAccessibleWhenUnlocked;
 #endif
         
         //write data
@@ -711,7 +708,7 @@ forKeyedSubscript:(NSString *)key
         NSError *error = nil;
         
         object =
-        [NSKeyedUnarchiver unarchiveObjectWithData:data];
+        [Settings objectWithData:data];
         
         if (!object)
              NSLog(@"NSKeychain failed to decode data for key '%@', error: %@",

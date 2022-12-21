@@ -1,6 +1,6 @@
 //
 //  Settings.h
-//  v.4.0
+//  v.4.1
 //
 //  Created by Sergey Vanichkin on 19.08.16.
 //  Copyright © 2016 Sergey Vanichkin. All rights reserved.
@@ -16,8 +16,6 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-//
-//
 /*
 
 Sample 1:
@@ -145,16 +143,6 @@ NSString *s = [Settings.keychainShare objectForKey:@"TestKey"];
 #define DEV_DATA_CHANGED @"DevDataChanged"
 #define ALL_DATA_CHANGED @"AllDataChanged"
 
-typedef enum
-{
-    SettingsTypeApplication,   // NSUserDefaults
-    SettingsTypeDevice,        // NSUserDefault with group id
-    SettingsTypeAll,           // NSUbiquitousKeyValueStore (need enable iCloud Key-Value)
-    SettingsTypeKeychainLocal, // Keychain without iCloud sync
-    SettingsTypeKeychain,      // Keychain with iCloud sync (need enable Keychain Share)
-    SettingsTypeKeychainShare  // Keychain with iCloud sync and share group
-} SettingsType;
-
 @class SettingsProxy;
 
 @interface Settings : NSObject
@@ -162,8 +150,8 @@ typedef enum
 // Capability -> App Groups
 // Sharing between applications on one device OR
 // Sharing between app and extention with one app group id
-+(NSString *)deviceGroupId;
 +(void)setDeviceGroupId:(NSString *)appGroup;
++(NSString *)deviceGroupId;
                                     
 // Capability -> iCloud -> Key-Value storage and Enable it then
 // add to entitlement key
@@ -175,9 +163,8 @@ typedef enum
                        
 // Capability -> Keychain Sharing
 // Sharing between applications with one group id
-+(NSString *)keychainGroupId;
 +(void)setKeychainGroupId:(NSString *)group;
-                                        
++(NSString *)keychainGroupId;
 
 +(SettingsProxy *)application;   // Local for this application
 +(SettingsProxy *)device;        // Local on device for several applications by app group id
@@ -192,12 +179,7 @@ typedef enum
 
 @end
 
-@interface Keychain : NSObject
-@end
-
 @interface SettingsProxy : NSObject
-
-@property (nonatomic, assign, readonly) SettingsType type;
 
 -(id)objectForKeyedSubscript:(NSString *)key;
 -(void) setObject:(id        )object
