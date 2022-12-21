@@ -1,6 +1,6 @@
 //
 //  Settings.m
-//  v.4.2
+//  v.4.3
 //
 //  Created by Sergey Vanichkin on 19.08.16.
 //  Copyright © 2016 Sergey Vanichkin. All rights reserved.
@@ -656,13 +656,10 @@ forKeyedSubscript:(NSString *)key
     update[(__bridge NSString *)kSecAttrAccessible] =
     (__bridge id)kSecAttrAccessibleWhenUnlocked;
     
-    //write data
-    OSStatus status = errSecSuccess;
-    
     //there's already existing data for this key, update it
     if (existedData)
     {
-        status =
+        OSStatus status =
         SecItemUpdate((__bridge CFDictionaryRef)query,
                       (__bridge CFDictionaryRef)update);
         
@@ -677,7 +674,7 @@ forKeyedSubscript:(NSString *)key
     //no existing data, add a new item
     [query addEntriesFromDictionary:update];
     
-    status =
+    OSStatus status =
     SecItemAdd((__bridge CFDictionaryRef)query, NULL);
     
     if (status != errSecSuccess)
@@ -708,19 +705,6 @@ forKeyedSubscript:(NSString *)key
 
     return
     object;
-}
-
--(void) setObject:(id)object
-forKeyedSubscript:(id)key
-{
-    [self setObject:object
-             forKey:key];
-}
-
--(id)objectForKeyedSubscript:(id)key
-{
-    return
-    [self objectForKey:key];
 }
 
 @end
