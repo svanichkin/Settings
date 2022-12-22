@@ -16,7 +16,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.name         = "svanichkin_Settings"
-  spec.version      = "4.4.1"
+  spec.version      = "5.0.0"
   spec.summary      = "Utility iOS/macOS class wrapper for (UsersDefaults/Key-Value/Keychain)"
 
   # This description is used to generate tags and improve search results.
@@ -39,8 +39,8 @@ Pod::Spec.new do |spec|
   #  Popular ones are 'MIT', 'BSD' and 'Apache License, Version 2.0'.
   #
 
-  spec.license      = "Apache License, Version 2.0"
-  # spec.license      = { :type => "Apache License, Version 2.0", :file => "LICENSE" }
+  # spec.license      = "Apache License, Version 2.0"
+  spec.license      = { :type => "Apache License, Version 2.0", :file => "LICENSE" }
 
 
   # ――― Author Metadata  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
@@ -91,10 +91,10 @@ Pod::Spec.new do |spec|
   #  Not including the public_header_files will make all headers public.
   #
 
-  spec.source_files  = "Classes", "Classes/**/*.{h,m}"
+  spec.source_files  = "Sources", "Sources/*.{h,m}", "Sources/*.swift"
   # spec.exclude_files = "Classes/Exclude"
 
-  spec.public_header_files = "Classes/**/*.h"
+  spec.public_header_files = "Sources/*.h"
 
 
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
