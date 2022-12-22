@@ -8,12 +8,12 @@ This library works on many projects such as Mubert, Morse, etc. Top of App Store
 
 Under the hood, work with NSUserDefaults (locally and with AppGroups), NSUbiquitousKeyValueStore, NSKeychain with Share.
 
-### Sample 1:
+## Sample 1:
 
 Save and load "Test" string to key with "TestKey" name
 this sample for local settings on current application
 
-Objective-C
+### Objective-C
 
 In app1 on user iphone
 ```objective-c
@@ -25,7 +25,7 @@ In app1 on user iphone
 NSString *s = Settings.application[@"TestKey"];
 ```
 
-Swift
+### Swift
 
 In app1 on user iphone
 ```swift
@@ -37,14 +37,14 @@ In app1 on user iphone
 let s = Settings.application["TestKey"]
 ```
 
-### Sample 2:
+## Sample 2:
 
 Save and load "Test" string to key with "TestKey" name
 this sample for local settings between one or more applications
 
 Go to Capability -> App Groups and Add new (group.com.application.test)
 
-Objective-C
+### Objective-C
 
 In app1 on user iphone
 ```objective-c
@@ -57,7 +57,7 @@ Settings.deviceAppGroup = @"group.com.application.test";
 NSString *s = Settings.device[@"TestKey"];
 ```
 
-Swift
+### Swift
 
 In app1 on user iphone
 ```swift
@@ -71,7 +71,7 @@ let s = Settings.device["TestKey"]
 ```
 
 
-### Sample 3:
+## Sample 3:
 
 Save and load "Test" string to key with "TestKey" name
 this sample for global settings between one or more user devices
@@ -85,7 +85,7 @@ entitlements project file "iCloud Key-Value Store"
 value for this key is "$(TeamIdentifierPrefix)$(CFBundleIdentifier)"
 sample somthing this: "9T111111W8.myOrganization.myProducName"
 
-Objective-C
+### Objective-C
 
 In app1 on user iphone
 ```objective-c
@@ -97,7 +97,7 @@ In app1 on user ipad
 NSString *s = Settings.all[@"TestKey"];
 ```
 
-Swift
+### Swift
 
 In app1 on user iphone
 ```swift
@@ -110,7 +110,7 @@ let s = Settings.all["TestKey"]
 ```
 
 
-### Sample 4:
+## Sample 4:
 
 Save and load "Test" string to key with "TestKey" name
 this sample for global settings between one or more user devices and
@@ -124,7 +124,7 @@ entitlements project file "iCloud Key-Value Store"
 value for this key is "$(TeamIdentifierPrefix)$(CFBundleIdentifier)"
 sample somthing this id: "9T111111W8.myOrganization.myProducName"
 
-Objective-C
+### Objective-C
 
 In app1 on user iphone
 ```objective-c
@@ -140,7 +140,7 @@ NSString *idApp2 = Settings.deviceGroupId; // idApp1 == idApp2
 NSString *s = Settings.all[@"TestKey"];
 ```
 
-Swift
+### Swift
 
 In app1 on user iphone
 ```swift
@@ -157,12 +157,12 @@ let s = Settings.all["TestKey"]
 ```
 
 
-### Sample 5:
+## Sample 5:
 
 Save and load "Test" string to key with "TestKey" name
 this sample for local keychain without iCloud sync
 
-Objective-C
+### Objective-C
 
 In app1 on user iphone
 ```objective-c
@@ -174,7 +174,7 @@ In app1 on user ipad
 NSString *s = Settings.keychainLocal[@"TestKey"];
 ```
 
-Swift
+### Swift
 
 In app1 on user iphone
 ```swift
@@ -187,14 +187,14 @@ let s = Settings.keychainLocal["TestKey"]
 ```
 
 
-### Sample 6:
+## Sample 6:
 
 Save and load "Test" string to key with "TestKey" name
 this sample for global keychain on all user devices with iCloud sync
 
 Capability -> Keychain Sharing
 
-Objective-C
+### Objective-C
 
 In app1 on user iphone
 ```objective-c
@@ -206,7 +206,7 @@ In app1 on user ipad
 NSString *s = Settings.keychain[@"TestKey"];
 ```
 
-Swift
+### Swift
 
 In app1 on user iphone
 ```swift
@@ -219,14 +219,14 @@ let s = Settings.keychain["TestKey"]
 ```
 
 
-### Sample 7:
+## Sample 7:
 
 Save and load "Test" string to key with "TestKey" name
 this sample for global keychain on all user devices between applications with iCloud sync
 
 Capability -> Keychain Sharing -> Add new group (my.testingKeychain)
 
-Objective-C
+### Objective-C
 
 In app1 on user iphone
 ```objective-c
@@ -245,7 +245,7 @@ Then read value
 NSString *s = Settings.keychainShare[@"TestKey"];
 ```
 
-Swift
+### Swift
 
 In app1 on user iphone
 ```swift
