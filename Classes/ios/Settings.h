@@ -24,10 +24,10 @@ Save and load "Test" string to key with "TestKey" name
 this sample for local settings on current application
 
 In app1 on user iphone
-[Settings.application setObject:@"Test" forKey:@"TestKey"];
+Settings.application[@"TestKey"] = @"Test";
 
 In app1 on user iphone
-NSString *s = [Settings.application objectForKey:@"TestKey"];
+NSString *s = Settings.application[@"TestKey"];
 
 
 Sample 2:
@@ -38,11 +38,11 @@ this sample for local settings between one or more applications
 Go to Capability -> App Groups and Add new (group.com.application.test)
 
 In app1 on user iphone
-[Settings.device setObject:@"Test" forKey:@"TestKey"];
+Settings.device[@"TestKey"] = @"Test";
 
 In app2 OR app1 extention user iphone
 Settings.deviceAppGroup = @"group.com.application.test";
-NSString *s = [Settings.device objectForKey:@"TestKey"];
+NSString *s = Settings.device[@"TestKey"];
 
 
 Sample 3:
@@ -60,10 +60,10 @@ value for this key is "$(TeamIdentifierPrefix)$(CFBundleIdentifier)"
 sample somthing this: "9T111111W8.myOrganization.myProducName"
 
 In app1 on user iphone
-[Settings.all setObject:@"Test" forKey:@"TestKey"];
+Settings.all[@"TestKey"] = @"Test";
 
 In app1 on user ipad
-NSString *s = [Settings.all objectForKey:@"TestKey"];
+NSString *s = Settings.all[@"TestKey"];
 
 
 Sample 4:
@@ -81,14 +81,14 @@ value for this key is "$(TeamIdentifierPrefix)$(CFBundleIdentifier)"
 sample somthing this id: "9T111111W8.myOrganization.myProducName"
 
 In app1 on user iphone
-NSString *myIdInApp1 = Settings.deviceGroupId;
-[Settings.all setObject:@"Test" forKey:@"TestKey"];
+NSString *idApp1 = Settings.deviceGroupId;
+Settings.all[@"TestKey"] = @"Test";
 
 In app2 on user ipad
 Add Capability -> iCloud -> Enable Key-Value storage
 Replace in entitlements id to (9T111111W8.myOrganization.myProducName)
-NSString *myIdInApp2SameApp1 = Settings.deviceGroupId;
-NSString *s = [Settings.all objectForKey:@"TestKey"];
+NSString *idApp2 = Settings.deviceGroupId; // idApp1 == iaApp2
+NSString *s = Settings.all[@"TestKey"];
 
 
 Sample 5:
@@ -97,10 +97,10 @@ Save and load "Test" string to key with "TestKey" name
 this sample for local keychain without iCloud sync
 
 In app1 on user iphone
-[Settings.keychainLocal setObject:@"Test" forKey:@"TestKey"];
+Settings.keychainLocal[@"TestKey"] = @"Test";
 
 In app1 on user ipad
-NSString *s = [Settings.keychainLocal objectForKey:@"TestKey"];
+NSString *s = Settings.keychainLocal[@"TestKey"];
 
 
 Sample 6:
@@ -111,10 +111,10 @@ this sample for global keychain on all user devices with iCloud sync
 Capability -> Keychain Sharing
 
 In app1 on user iphone
-[Settings.keychain setObject:@"Test" forKey:@"TestKey"];
+Settings.keychain[@"TestKey"] = @"Test";
 
 In app1 on user ipad
-NSString *s = [Settings.keychain objectForKey:@"TestKey"];
+NSString *s = Settings.keychain[@"TestKey"];
 
 
 Sample 7:
@@ -125,7 +125,7 @@ this sample for global keychain on all user devices between applications with iC
 Capability -> Keychain Sharing -> Add new group (my.testingKeychain)
 
 In app1 on user iphone
-[Settings.keychainShare setObject:@"Test" forKey:@"TestKey"];
+Settings.keychainShare[@"TestKey"] = @"Test";
 
 In app2 on user ipad
 Add Capability -> Keychain Sharing -> Add new group (my.testingKeychain)
@@ -134,7 +134,7 @@ Add Capability -> Keychain Sharing and add new group over code
 Settings.keychainGroupId = @"my.testingKeychain";
 
 Then read value
-NSString *s = [Settings.keychainShare objectForKey:@"TestKey"];
+NSString *s = Settings.keychainShare[@"TestKey"];
 */
 
 #import <Foundation/Foundation.h>

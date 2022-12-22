@@ -3,7 +3,7 @@ Settings is a class that allows you to work immediately with all local storage s
 
 This library works on many projects such as Mubert, Morse, etc. Top of App Store.
 
-Under the hood, work with NSUserDefaults (locally and with AppGroups), NSUbiquitousKeyValueStore, Keychain.
+Under the hood, work with NSUserDefaults (locally and with AppGroups), NSUbiquitousKeyValueStore, NSKeychain with Share.
 
 Sample 1:
 
@@ -12,12 +12,12 @@ this sample for local settings on current application
 
 In app1 on user iphone
 ```
-[Settings.application setObject:@"Test" forKey:@"TestKey"];
+Settings.application[@"TestKey"] = @"Test";
 ```
 
 In app1 on user iphone
 ```
-NSString *s = [Settings.application objectForKey:@"TestKey"];
+NSString *s = Settings.application[@"TestKey"];
 ```
 
 
@@ -30,13 +30,13 @@ Go to Capability -> App Groups and Add new (group.com.application.test)
 
 In app1 on user iphone
 ```
-[Settings.device setObject:@"Test" forKey:@"TestKey"];
+Settings.device[@"TestKey"] = @"Test";
 ```
 
 In app2 OR app1 extention user iphone
 ```
 Settings.deviceAppGroup = @"group.com.application.test";
-NSString *s = [Settings.device objectForKey:@"TestKey"];
+NSString *s = Settings.device[@"TestKey"];
 ```
 
 
@@ -56,12 +56,12 @@ sample somthing this: "9T111111W8.myOrganization.myProducName"
 
 In app1 on user iphone
 ```
-[Settings.all setObject:@"Test" forKey:@"TestKey"];
+Settings.all[@"TestKey"] = @"Test";
 ```
 
 In app1 on user ipad
 ```
-NSString *s = [Settings.all objectForKey:@"TestKey"];
+NSString *s = Settings.all[@"TestKey"];
 ```
 
 
@@ -81,16 +81,16 @@ sample somthing this id: "9T111111W8.myOrganization.myProducName"
 
 In app1 on user iphone
 ```
-NSString *myIdInApp1 = Settings.deviceGroupId;
-[Settings.all setObject:@"Test" forKey:@"TestKey"];
+NSString *idApp1 = Settings.deviceGroupId;
+Settings.all[@"TestKey"] = @"Test";
 ```
 
 In app2 on user ipad
 Add Capability -> iCloud -> Enable Key-Value storage
 Replace in entitlements id to (9T111111W8.myOrganization.myProducName)
 ```
-NSString *myIdInApp2SameApp1 = Settings.deviceGroupId;
-NSString *s = [Settings.all objectForKey:@"TestKey"];
+NSString *idApp2 = Settings.deviceGroupId; // idApp1 == idApp2
+NSString *s = Settings.all[@"TestKey"];
 ```
 
 
@@ -101,12 +101,12 @@ this sample for local keychain without iCloud sync
 
 In app1 on user iphone
 ```
-[Settings.keychainLocal setObject:@"Test" forKey:@"TestKey"];
+Settings.keychainLocal[@"TestKey"] = @"Test";
 ```
 
 In app1 on user ipad
 ```
-NSString *s = [Settings.keychainLocal objectForKey:@"TestKey"];
+NSString *s = Settings.keychainLocal[@"TestKey"];
 ```
 
 
@@ -119,12 +119,12 @@ Capability -> Keychain Sharing
 
 In app1 on user iphone
 ```
-[Settings.keychain setObject:@"Test" forKey:@"TestKey"];
+Settings.keychain[@"TestKey"] = @"Test";
 ```
 
 In app1 on user ipad
 ```
-NSString *s = [Settings.keychain objectForKey:@"TestKey"];
+NSString *s = Settings.keychain[@"TestKey"];
 ```
 
 
@@ -137,7 +137,7 @@ Capability -> Keychain Sharing -> Add new group (my.testingKeychain)
 
 In app1 on user iphone
 ```
-[Settings.keychainShare setObject:@"Test" forKey:@"TestKey"];
+Settings.keychainShare[@"TestKey"] = @"Test";
 ```
 
 In app2 on user ipad
@@ -149,5 +149,5 @@ Settings.keychainGroupId = @"my.testingKeychain";
 ```
 Then read value
 ```
-NSString *s = [Settings.keychainShare objectForKey:@"TestKey"];
+NSString *s = Settings.keychainShare[@"TestKey"];
 ```
