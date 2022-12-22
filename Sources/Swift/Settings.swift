@@ -132,7 +132,7 @@
  */
 
 //@_exported
-import Entitlement
+import Objective_C
 
 import Foundation
 
