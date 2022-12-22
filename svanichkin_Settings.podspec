@@ -16,7 +16,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.name         = "svanichkin_Settings"
-  spec.version      = "5.0.0"
+  spec.version      = "4.9.0"
   spec.summary      = "Utility iOS/macOS class wrapper for (UsersDefaults/Key-Value/Keychain)"
 
   # This description is used to generate tags and improve search results.
