@@ -219,7 +219,7 @@ public final class Settings {
 
 // private final class SettingsProxy {
 // Хотелось бы сделать этот класс приватным, но если нет, то норм и так
-final class SettingsProxy {
+public final class SettingsProxy {
     enum SettingsType {
         case settingsTypeApplication, // NSUserDefaults
              settingsTypeDevice, // NSUserDefault with group id
