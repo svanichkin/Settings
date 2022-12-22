@@ -7,18 +7,18 @@ let package = Package(
     products: [
         .library(
             name: "Settings",
-            targets: ["SettingsObjC", "SettingsSwift"]
+            targets: ["Entitlement", "Settings"]
         )
     ],
     dependencies: [],
     targets: [
         .target(
-            name: "SettingsObjC",
-            path: "Sources/ObjC"
+            name: "Entitlement",
+            path: "Sources/ObjC/Entitlement"
         ),
         .target(
-            name: "SettingsSwift",
-            dependencies: ["SettingsObjC"],
+            name: "Settings",
+            dependencies: ["Entitlement"],
             path: "Sources/Swift"
         )
     ]
