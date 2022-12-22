@@ -136,7 +136,7 @@ import Entitlement
 
 import Foundation
 
-final class Settings {
+public final class Settings {
     enum NotifyName {
         static let appDataChanged = "AppDataChanged"
         static let devDataChanged = "DevDataChanged"
@@ -146,50 +146,50 @@ final class Settings {
     // Capability -> App Groups
     // Sharing between applications on one device OR
     // Sharing between app and extention with one app group id
-    static var deviceGroupId: String? {
+    public static var deviceGroupId: String? {
         set { Settings.storage.deviceGroupId = newValue }
         get { Settings.storage.deviceGroupId }
     }
 
     // Capability -> iCloud -> Key-Value storage and Enable
-    static var allGroupId: String? {
+    public static var allGroupId: String? {
         SettingsProxy.valueForEntitlement(key: "com.apple.developer.ubiquity-kvstore-identifier")
     }
 
     // Capability -> Keychain Sharing
     // Sharing between applications with one group id
-    static var keychainGroupId: String? {
+    public static var keychainGroupId: String? {
         set { Settings.storage.keychainGroupId = newValue }
         get { Settings.storage.keychainGroupId }
     }
 
     // Local for this application
-    static var application: SettingsProxy {
+    public static var application: SettingsProxy {
         Settings.storage.application
     }
 
     // Local on device for several applications by app group id
-    static var device: SettingsProxy {
+    public static var device: SettingsProxy {
         Settings.storage.device
     }
 
     // Global for all user devices, for this application (sync by iCloud)
-    static var all: SettingsProxy {
+    public static var all: SettingsProxy {
         Settings.storage.all
     }
 
     // Local keychain for this application
-    static var keychainLocal: SettingsProxy {
+    public static var keychainLocal: SettingsProxy {
         Settings.storage.keychainLocal
     }
 
     // Global keychain for all user devices, for this application
-    static var keychain: SettingsProxy {
+    public static var keychain: SettingsProxy {
         Settings.storage.keychain
     }
 
     // Global keychain for all user devices, for keychain group
-    static var keychainShare: SettingsProxy {
+    public static var keychainShare: SettingsProxy {
         Settings.storage.keychainShare
     }
 
@@ -207,12 +207,12 @@ final class Settings {
     private(set) lazy var keychainGroupId = SettingsProxy.valueForEntitlement(key: "keychain-access-groups")
 
     // Helpers
-    static func data(withObject object: Any) -> Data? {
+    public static func data(withObject object: Any) -> Data? {
         try? NSKeyedArchiver.archivedData(withRootObject: object,
                                           requiringSecureCoding: true)
     }
 
-    static func object(withData data: Data) -> Any? {
+    public static func object(withData data: Data) -> Any? {
         NSKeyedUnarchiver.unarchiveObject(with: data)
     }
 }
