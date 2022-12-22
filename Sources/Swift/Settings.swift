@@ -439,7 +439,7 @@ final class SettingsProxy {
         }
     }
 
-    subscript(key: String) -> Any? {
+    public subscript(key: String) -> Any? {
         get { object(forKey: key) }
         set { set(newValue, forKey: key) }
     }
