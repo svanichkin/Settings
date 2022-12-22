@@ -146,50 +146,50 @@ import Foundation
     // Capability -> App Groups
     // Sharing between applications on one device OR
     // Sharing between app and extention with one app group id
-    public static var deviceGroupId: String? {
+    @objc public static var deviceGroupId: String? {
         set { Settings.storage.deviceGroupId = newValue }
         get { Settings.storage.deviceGroupId }
     }
 
     // Capability -> iCloud -> Key-Value storage and Enable
-    public static var allGroupId: String? {
+    @objc public static var allGroupId: String? {
         SettingsProxy.valueForEntitlement(key: "com.apple.developer.ubiquity-kvstore-identifier")
     }
 
     // Capability -> Keychain Sharing
     // Sharing between applications with one group id
-    public static var keychainGroupId: String? {
+    @objc public static var keychainGroupId: String? {
         set { Settings.storage.keychainGroupId = newValue }
         get { Settings.storage.keychainGroupId }
     }
 
     // Local for this application
-    public static var application: SettingsProxy {
+    @objc public static var application: SettingsProxy {
         Settings.storage.application
     }
 
     // Local on device for several applications by app group id
-    public static var device: SettingsProxy {
+    @objc public static var device: SettingsProxy {
         Settings.storage.device
     }
 
     // Global for all user devices, for this application (sync by iCloud)
-    public static var all: SettingsProxy {
+    @objc public static var all: SettingsProxy {
         Settings.storage.all
     }
 
     // Local keychain for this application
-    public static var keychainLocal: SettingsProxy {
+    @objc public static var keychainLocal: SettingsProxy {
         Settings.storage.keychainLocal
     }
 
     // Global keychain for all user devices, for this application
-    public static var keychain: SettingsProxy {
+    @objc public static var keychain: SettingsProxy {
         Settings.storage.keychain
     }
 
     // Global keychain for all user devices, for keychain group
-    public static var keychainShare: SettingsProxy {
+    @objc public static var keychainShare: SettingsProxy {
         Settings.storage.keychainShare
     }
 
@@ -219,7 +219,7 @@ import Foundation
 
 // private final class SettingsProxy {
 // Хотелось бы сделать этот класс приватным, но если нет, то норм и так
-public final class SettingsProxy {
+@objc public final class SettingsProxy:NSObject {
     enum SettingsType {
         case settingsTypeApplication, // NSUserDefaults
              settingsTypeDevice, // NSUserDefault with group id
@@ -250,24 +250,21 @@ public final class SettingsProxy {
         case .settingsTypeApplication:
             application = UserDefaults.standard
 
-            if applicationObserver == nil {
-                applicationObserver = NotificationCenter.default.addObserver(
-                    forName: UserDefaults.didChangeNotification,
-                    object: nil,
-                    queue: nil
-                ) {
-                    note in
-
-                    if note.object as? UserDefaults != self.application {
-                        return
-                    }
-
-                    NotificationCenter.default.post(
-                        name: Notification.Name(Settings.NotifyName.appDataChanged),
-                        object: self.application
-                    )
-                } as? NSObject
-            }
+            applicationObserver = NotificationCenter.default.addObserver(
+                forName: UserDefaults.didChangeNotification,
+                object: nil,
+                queue: nil
+            ) { note in
+                
+                if note.object as? UserDefaults != application {
+                    return
+                }
+                
+                NotificationCenter.default.post(
+                    name: Notification.Name(Settings.NotifyName.appDataChanged),
+                    object: application
+                )
+            } as? NSObject            
 
         case .settingsTypeDevice:
 
@@ -277,43 +274,37 @@ public final class SettingsProxy {
 
             device = UserDefaults(suiteName: Settings.deviceGroupId)
 
-            if deviceObserver == nil {
-                deviceObserver = NotificationCenter.default.addObserver(
-                    forName: UserDefaults.didChangeNotification,
-                    object: nil,
-                    queue: nil
-                ) {
-                    note in
-
-                    if note.object as? UserDefaults != self.device {
-                        return
-                    }
-
-                    NotificationCenter.default.post(
-                        name: Notification.Name(Settings.NotifyName.devDataChanged),
-                        object: self.device
-                    )
-                } as? NSObject
-            }
+            deviceObserver = NotificationCenter.default.addObserver(
+                forName: UserDefaults.didChangeNotification,
+                object: nil,
+                queue: nil
+            ) { note in
+                
+                if note.object as? UserDefaults != device {
+                    return
+                }
+                
+                NotificationCenter.default.post(
+                    name: Notification.Name(Settings.NotifyName.devDataChanged),
+                    object: device
+                )
+            } as? NSObject
 
         case .settingsTypeAll:
 
             all = NSUbiquitousKeyValueStore.default
             
-            if allObserver == nil {
-                allObserver = NotificationCenter.default.addObserver(
-                    forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-                    object: nil,
-                    queue: nil
-                ) {
-                    _ in
-
-                    NotificationCenter.default.post(
-                        name: Notification.Name(Settings.NotifyName.allDataChanged),
-                        object: self.all
-                    )
-                } as? NSObject
-            }
+            allObserver = NotificationCenter.default.addObserver(
+                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                object: nil,
+                queue: nil
+            ) { _ in
+                
+                NotificationCenter.default.post(
+                    name: Notification.Name(Settings.NotifyName.allDataChanged),
+                    object: all
+                )
+            } as? NSObject
             
             all?.synchronize()
 
@@ -439,7 +430,7 @@ public final class SettingsProxy {
         }
     }
 
-    public subscript(key: String) -> Any? {
+    @objc public subscript(key: String) -> Any? {
         get { object(forKey: key) }
         set { set(newValue, forKey: key) }
     }
