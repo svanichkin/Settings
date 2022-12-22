@@ -165,17 +165,29 @@ import Foundation
 
     // Local for this application
     @objc public static var application: SettingsProxy {
-        Settings.storage.application
+        let proxy = Settings.storage.application
+        
+        proxy.addNotificationsListener()
+        
+        return proxy
     }
 
     // Local on device for several applications by app group id
     @objc public static var device: SettingsProxy {
-        Settings.storage.device
+        let proxy = Settings.storage.device
+        
+        proxy.addNotificationsListener()
+        
+        return proxy
     }
 
     // Global for all user devices, for this application (sync by iCloud)
     @objc public static var all: SettingsProxy {
-        Settings.storage.all
+        let proxy = Settings.storage.all
+        
+        proxy.addNotificationsListener()
+        
+        return proxy
     }
 
     // Local keychain for this application
@@ -196,7 +208,7 @@ import Foundation
     // Singletone for internal use
     private static let storage = Settings()
 
-    private(set) lazy var application = SettingsProxy(withType: .settingsTypeApplication)
+    private(set) lazy var application = SettingsProxy.init(withType: .settingsTypeApplication)
     private(set) lazy var device = SettingsProxy(withType: .settingsTypeDevice)
     private(set) lazy var all = SettingsProxy(withType: .settingsTypeAll)
     private(set) lazy var keychainLocal = SettingsProxy(withType: .settingsTypeKeychainLocal)
@@ -248,23 +260,8 @@ import Foundation
 
         switch type {
         case .settingsTypeApplication:
+        
             application = UserDefaults.standard
-
-            applicationObserver = NotificationCenter.default.addObserver(
-                forName: UserDefaults.didChangeNotification,
-                object: nil,
-                queue: nil
-            ) { note in
-                
-                if note.object as? UserDefaults != application {
-                    return
-                }
-                
-                NotificationCenter.default.post(
-                    name: Notification.Name(Settings.NotifyName.appDataChanged),
-                    object: application
-                )
-            } as? NSObject            
 
         case .settingsTypeDevice:
 
@@ -273,51 +270,21 @@ import Foundation
             }
 
             device = UserDefaults(suiteName: Settings.deviceGroupId)
-
-            deviceObserver = NotificationCenter.default.addObserver(
-                forName: UserDefaults.didChangeNotification,
-                object: nil,
-                queue: nil
-            ) { note in
-                
-                if note.object as? UserDefaults != device {
-                    return
-                }
-                
-                NotificationCenter.default.post(
-                    name: Notification.Name(Settings.NotifyName.devDataChanged),
-                    object: device
-                )
-            } as? NSObject
-
+    
         case .settingsTypeAll:
-
+        
             all = NSUbiquitousKeyValueStore.default
-            
-            allObserver = NotificationCenter.default.addObserver(
-                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-                object: nil,
-                queue: nil
-            ) { _ in
-                
-                NotificationCenter.default.post(
-                    name: Notification.Name(Settings.NotifyName.allDataChanged),
-                    object: all
-                )
-            } as? NSObject
-            
-            all?.synchronize()
 
         case .settingsTypeKeychainLocal:
-
+        
             keychainLocal = Keychain.defaultKeychainLocal
 
         case .settingsTypeKeychain:
-
+        
             keychain = Keychain.defaultKeychain
 
         case .settingsTypeKeychainShare:
-
+        
             if Settings.keychainGroupId == nil {
                 fatalError("KeychainGroupId not found. Add Keychain Sharing Groups in target Capability. Capability -> Keychain Sharing")
             }
@@ -327,6 +294,66 @@ import Foundation
             keychainShare!.keychainGroupId = Settings.keychainGroupId
         }
     }
+    
+    func addNotificationsListener() {
+        
+        switch type {
+        case .settingsTypeApplication:
+
+            applicationObserver = NotificationCenter.default.addObserver(
+                forName: UserDefaults.didChangeNotification,
+                object: nil,
+                queue: nil
+            ) { note in
+                
+                if note.object as? UserDefaults != UserDefaults.standard {
+                    return
+                }
+                
+                NotificationCenter.default.post(
+                    name: Notification.Name(Settings.NotifyName.appDataChanged),
+                    object: UserDefaults.standard
+                )
+            } as? NSObject            
+            
+        case .settingsTypeDevice:
+            
+            deviceObserver = NotificationCenter.default.addObserver(
+                forName: UserDefaults.didChangeNotification,
+                object: nil,
+                queue: nil
+            ) { note in
+                
+                if note.object as? UserDefaults != self.device {
+                    return
+                }
+                
+                NotificationCenter.default.post(
+                    name: Notification.Name(Settings.NotifyName.devDataChanged),
+                    object: self.device
+                )
+            } as? NSObject            
+            
+        case .settingsTypeAll:
+            
+            allObserver = NotificationCenter.default.addObserver(
+                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                object: nil,
+                queue: nil
+            ) { _ in
+                
+                NotificationCenter.default.post(
+                    name: Notification.Name(Settings.NotifyName.allDataChanged),
+                    object: NSUbiquitousKeyValueStore.default
+                )
+            } as? NSObject
+            
+            all?.synchronize()
+            
+        default:
+        return
+        }
+    } 
 
     static func valueForEntitlement(key: String) -> String? {
 #if os(OSX) || (os(iOS) && targetEnvironment(macCatalyst))
