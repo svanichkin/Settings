@@ -1,5 +1,4 @@
-// swift-tools-version: 5.7
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// swift-tools-version:5.7
 
 import PackageDescription
 
@@ -8,11 +7,19 @@ let package = Package(
     products: [
         .library(
             name: "Settings",
-            targets: ["Settings"]),
+            targets: ["SettingsObjC", "SettingsSwift"]
+        )
     ],
+    dependencies: [],
     targets: [
         .target(
-            name: "Settings", 
-            path: "Sources")
+            name: "SettingsObjC",
+            path: "Sources/ObjC"
+        ),
+        .target(
+            name: "SettingsSwift",
+            dependencies: ["SettingsObjC"],
+            path: "Sources/Swift"
+        )
     ]
 )

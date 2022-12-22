@@ -131,6 +131,8 @@
  let s = Settings.keychainShare["TestKey"]
  */
 
+@_exported import SettingsObjC
+
 import Foundation
 
 final class Settings {
