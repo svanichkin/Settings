@@ -136,7 +136,7 @@ import Entitlement
 
 import Foundation
 
-public final class Settings {
+@objc public final class Settings : NSObject {
     enum NotifyName {
         static let appDataChanged = "AppDataChanged"
         static let devDataChanged = "DevDataChanged"
