@@ -5,6 +5,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "Settings.h"
 
 @interface Entitlement : NSObject
 
