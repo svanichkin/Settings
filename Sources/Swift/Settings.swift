@@ -1,6 +1,6 @@
 //
 //  Settings.swift
-//  v.5.0
+//  v.5.1
 //
 //  Created by Sergey Vanichkin on 19.08.16.
 //  Copyright © 2016 Sergey Vanichkin. All rights reserved.
@@ -132,7 +132,7 @@
  */
 
 //@_exported
-import Objective_C
+//import Objective_C
 
 import Foundation
 
@@ -414,26 +414,26 @@ import Foundation
         }
     }
 
-    @objc public func object(forKey key: String) -> AnyObject {
+    @objc public func object(forKey key: String) -> Any? {
         switch type {
         case .settingsTypeApplication:
-            return application?.object(forKey: key) as AnyObject
+            return application?.object(forKey: key)
 
         case .settingsTypeDevice:
-            return device?.object(forKey: key) as AnyObject
+            return device?.object(forKey: key)
 
         case .settingsTypeAll:
             all?.synchronize()
-            return all?.object(forKey: key) as AnyObject
+            return all?.object(forKey: key)
 
         case .settingsTypeKeychainLocal:
-            return keychainLocal?.object(forKey: key) as AnyObject
+            return keychainLocal?.object(forKey: key)
 
         case .settingsTypeKeychain:
-            return keychain?.object(forKey: key) as AnyObject
+            return keychain?.object(forKey: key)
 
         case .settingsTypeKeychainShare:
-            return keychainShare?.object(forKey: key) as AnyObject
+            return keychainShare?.object(forKey: key)
         }
     }
 
@@ -494,23 +494,18 @@ final class Keychain {
         Keychain(isLocal: false, isShare: true)
     }
 
-    func query(withKey key: String) -> [String: AnyObject] {
-        // generate query
-        var query = [String: AnyObject]()
-
-        query[kSecAttrAccount as String] = key as AnyObject
-
-        if isShare == false {
-            query[kSecAttrService as String] = Bundle.main.bundleIdentifier as AnyObject
-        }
-
-        query[kSecClass as String] = kSecClassGenericPassword as AnyObject
-
-        query[kSecAttrSynchronizable as String] =
-            (isLocal ? kCFBooleanFalse : kCFBooleanTrue) as AnyObject
+    func query(withKey key: String) -> [CFString: Any] {
+        
+        var query: [CFString: Any] = [
+            kSecAttrAccount: key,
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrSynchronizable: (isLocal ? kCFBooleanFalse : kCFBooleanTrue) as CFBoolean
+        ]
 
         if isShare {
-            query[kSecAttrAccessGroup as String] = keychainGroupId as AnyObject
+            query[kSecAttrAccessGroup] = keychainGroupId
+        } else {
+            query[kSecAttrService] = Bundle.main.bundleIdentifier
         }
 
         return query
@@ -519,8 +514,8 @@ final class Keychain {
     func data(forKey key: String) -> Data? {
         var query = query(withKey: key)
 
-        query[kSecMatchLimit as String] = kSecMatchLimitOne as AnyObject
-        query[kSecReturnData as String] = kCFBooleanTrue as AnyObject
+        query[kSecMatchLimit] = kSecMatchLimitOne
+        query[kSecReturnData] = kCFBooleanTrue
 
         var result: AnyObject?
 
@@ -537,32 +532,27 @@ final class Keychain {
         set(nil, forKey: key)
     }
 
-    func object(forKey key: String) -> AnyObject? {
+    func object(forKey key: String) -> Any? {
         let data = data(forKey: key)
 
-        var object: AnyObject?
+        var object: Any?
 
         if data != nil {
-            object = Settings.object(withData: data!) as AnyObject?
+            object = Settings.object(withData: data!)
         }
 
         return object
     }
 
     func set(_ object: Any?, forKey key: String) {
-        let existedData = data(forKey: key)
-
         var query = query(withKey: key)
 
         // check for delete if obj nil
         if object == nil {
             // if key data is nil, delete complete )
-            if existedData == nil {
-                return
-            }
+            if data(forKey: key) == nil { return }
 
-            let status =
-                SecItemDelete(query as CFDictionary)
+            let status = SecItemDelete(query as CFDictionary)
 
             if status != errSecSuccess {
                 print("Keychain failed to delete data for key \(key), error: \(status)")
@@ -572,26 +562,22 @@ final class Keychain {
         }
 
         // add or update
-        let data = Settings.data(withObject: object as Any)
-
-        if data == nil {
+        guard let d = Settings.data(withObject: object as Any) else {
             print("Keychain failed to encode object for key \(key)")
 
             return
         }
 
         // update values query
-        var update = [String: AnyObject]()
-
-        update[kSecValueData as String] = data as AnyObject
-
-        update[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock as AnyObject
+        var update: [CFString: Any] = [
+            kSecValueData: d as Any,
+            kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlock
+        ]
 
         // there's already existing data for this key, update it
-        if existedData != nil {
-            let status =
-                SecItemUpdate(query as CFDictionary,
-                              update as CFDictionary)
+        if data(forKey: key) != nil {
+            let status = SecItemUpdate(query as CFDictionary,
+                                       update as CFDictionary)
 
             if status != errSecSuccess {
                 print("Keychain failed to update data for key \(key), error: \(status)")
@@ -601,11 +587,9 @@ final class Keychain {
         }
 
         // no existing data, add a new item
-
         query = query.merging(update) { $1 }
 
-        let status =
-            SecItemAdd(query as CFDictionary, nil)
+        let status = SecItemAdd(query as CFDictionary, nil)
 
         if status != errSecSuccess {
             print("Keychain failed to store data for key \(key), error: \(status)")
