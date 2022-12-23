@@ -132,7 +132,7 @@
  */
 
 //@_exported
-//import Objective_C
+import Objective_C
 
 import Foundation
 
