@@ -576,7 +576,7 @@ final class Keychain {
 
         update[kSecValueData as String] = data as AnyObject
 
-        update[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked as AnyObject
+        update[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock as AnyObject
 
         // there's already existing data for this key, update it
         if existedData != nil {
