@@ -137,7 +137,7 @@ import Objective_C
 import Foundation
 
 @objc public final class Settings : NSObject {
-    @objc public enum NotifyName {
+    enum NotifyName {
         static let appDataChanged = "AppDataChanged"
         static let devDataChanged = "DevDataChanged"
         static let allDataChanged = "AllDataChanged"
