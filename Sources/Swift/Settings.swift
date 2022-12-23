@@ -232,6 +232,9 @@ import Foundation
 // private final class SettingsProxy {
 // Хотелось бы сделать этот класс приватным, но если нет, то норм и так
 @objc public final class SettingsProxy:NSObject {
+    
+    private let lock = NSRecursiveLock()
+    
     enum SettingsType {
         case settingsTypeApplication, // NSUserDefaults
              settingsTypeDevice, // NSUserDefault with group id
@@ -314,7 +317,7 @@ import Foundation
                     name: Notification.Name(Settings.NotifyName.appDataChanged),
                     object: UserDefaults.standard
                 )
-            } as? NSObject            
+            } as? NSObject
             
         case .settingsTypeDevice:
             
@@ -332,7 +335,7 @@ import Foundation
                     name: Notification.Name(Settings.NotifyName.devDataChanged),
                     object: self.device
                 )
-            } as? NSObject            
+            } as? NSObject
             
         case .settingsTypeAll:
             
@@ -353,7 +356,7 @@ import Foundation
         default:
         return
         }
-    } 
+    }
 
     static func valueForEntitlement(key: String) -> String? {
 #if os(OSX) || (os(iOS) && targetEnvironment(macCatalyst))
@@ -411,7 +414,7 @@ import Foundation
         }
     }
 
-    func object(forKey key: String) -> AnyObject {
+    @objc public func object(forKey key: String) -> AnyObject {
         switch type {
         case .settingsTypeApplication:
             return application?.object(forKey: key) as AnyObject
@@ -434,7 +437,12 @@ import Foundation
         }
     }
 
-    func set(_ object: Any?, forKey key: String) {
+    @objc public func set(_ object: Any?, forKey key: String) {
+        lock.lock()
+        defer {
+            lock.unlock()
+        }
+        
         switch type {
         case .settingsTypeApplication:
             application?.set(object, forKey: key)
@@ -464,6 +472,7 @@ import Foundation
 }
 
 final class Keychain {
+    
     var isLocal: Bool = false
     var isShare: Bool = false
     var keychainGroupId: String?
