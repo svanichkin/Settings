@@ -1,6 +1,6 @@
 //
 //  Settings.swift
-//  v.5.1
+//  v.5.1.1
 //
 //  Created by Sergey Vanichkin on 19.08.16.
 //  Copyright © 2016 Sergey Vanichkin. All rights reserved.
@@ -166,27 +166,21 @@ import Foundation
     // Local for this application
     @objc public static var application: SettingsProxy {
         let proxy = Settings.storage.application
-        
         proxy.addNotificationsListener()
-        
         return proxy
     }
 
     // Local on device for several applications by app group id
     @objc public static var device: SettingsProxy {
         let proxy = Settings.storage.device
-        
         proxy.addNotificationsListener()
-        
         return proxy
     }
 
     // Global for all user devices, for this application (sync by iCloud)
     @objc public static var all: SettingsProxy {
         let proxy = Settings.storage.all
-        
         proxy.addNotificationsListener()
-        
         return proxy
     }
 
@@ -208,12 +202,12 @@ import Foundation
     // Singletone for internal use
     private static let storage = Settings()
 
-    private(set) lazy var application = SettingsProxy.init(withType: .settingsTypeApplication)
-    private(set) lazy var device = SettingsProxy(withType: .settingsTypeDevice)
-    private(set) lazy var all = SettingsProxy(withType: .settingsTypeAll)
-    private(set) lazy var keychainLocal = SettingsProxy(withType: .settingsTypeKeychainLocal)
-    private(set) lazy var keychain = SettingsProxy(withType: .settingsTypeKeychain)
-    private(set) lazy var keychainShare = SettingsProxy(withType: .settingsTypeKeychainShare)
+    private(set) lazy var application = SettingsProxy.init(withType: .application)
+    private(set) lazy var device = SettingsProxy(withType: .device)
+    private(set) lazy var all = SettingsProxy(withType: .all)
+    private(set) lazy var keychainLocal = SettingsProxy(withType: .keychainLocal)
+    private(set) lazy var keychain = SettingsProxy(withType: .keychain)
+    private(set) lazy var keychainShare = SettingsProxy(withType: .keychainShare)
 
     private(set) lazy var deviceGroupId = SettingsProxy.valueForEntitlement(key: "com.apple.security.application-groups")
     private(set) lazy var keychainGroupId = SettingsProxy.valueForEntitlement(key: "keychain-access-groups")
@@ -236,12 +230,12 @@ import Foundation
     private let lock = NSRecursiveLock()
     
     enum SettingsType {
-        case settingsTypeApplication, // NSUserDefaults
-             settingsTypeDevice, // NSUserDefault with group id
-             settingsTypeAll, // NSUbiquitousKeyValueStore
-             settingsTypeKeychainLocal, // Keychain without iCloud sync
-             settingsTypeKeychain, // Keychain with iCloud sync
-             settingsTypeKeychainShare // Keychain with iCloud sync and share group
+        case application,   // NSUserDefaults
+             device,        // NSUserDefault with group id
+             all,           // NSUbiquitousKeyValueStore
+             keychainLocal, // Keychain without iCloud sync
+             keychain,      // Keychain with iCloud sync
+             keychainShare  // Keychain with iCloud sync and share group
     }
 
     var type: SettingsType
@@ -260,101 +254,58 @@ import Foundation
     // Initializer access level change now
     init(withType t: SettingsType) {
         type = t
-
         switch type {
-        case .settingsTypeApplication:
-        
-            application = UserDefaults.standard
-
-        case .settingsTypeDevice:
-
-            if Settings.deviceGroupId == nil {
-                fatalError("АppGrpoupId not found. Add appGroups in target Capability. Capability -> App Groups")
-            }
-
-            device = UserDefaults(suiteName: Settings.deviceGroupId)
-    
-        case .settingsTypeAll:
-        
-            all = NSUbiquitousKeyValueStore.default
-
-        case .settingsTypeKeychainLocal:
-        
-            keychainLocal = Keychain.defaultKeychainLocal
-
-        case .settingsTypeKeychain:
-        
-            keychain = Keychain.defaultKeychain
-
-        case .settingsTypeKeychainShare:
-        
-            if Settings.keychainGroupId == nil {
-                fatalError("KeychainGroupId not found. Add Keychain Sharing Groups in target Capability. Capability -> Keychain Sharing")
-            }
-
-            keychainShare = Keychain.defaultKeychainShare
-
-            keychainShare!.keychainGroupId = Settings.keychainGroupId
+        case .application: application = UserDefaults.standard
+        case .device: if Settings.deviceGroupId == nil { fatalError("АppGrpoupId not found. Add appGroups in target Capability. Capability -> App Groups") }; device = UserDefaults(suiteName: Settings.deviceGroupId)
+        case .all: all = NSUbiquitousKeyValueStore.default
+        case .keychainLocal: keychainLocal = Keychain.defaultKeychainLocal
+        case .keychain: keychain = Keychain.defaultKeychain
+        case .keychainShare: if Settings.keychainGroupId == nil { fatalError("KeychainGroupId not found. Add Keychain Sharing Groups in target Capability. Capability -> Keychain Sharing") }; keychainShare = Keychain.defaultKeychainShare; keychainShare!.keychainGroupId = Settings.keychainGroupId
         }
     }
     
     func addNotificationsListener() {
-        
         switch type {
-        case .settingsTypeApplication:
-
+        case .application:
             applicationObserver = NotificationCenter.default.addObserver(
                 forName: UserDefaults.didChangeNotification,
                 object: nil,
                 queue: nil
             ) { note in
-                
-                if note.object as? UserDefaults != UserDefaults.standard {
-                    return
-                }
-                
+                if note.object as? UserDefaults != UserDefaults.standard { return }
                 NotificationCenter.default.post(
                     name: Notification.Name(Settings.NotifyName.appDataChanged),
                     object: UserDefaults.standard
                 )
             } as? NSObject
             
-        case .settingsTypeDevice:
-            
+        case .device:
             deviceObserver = NotificationCenter.default.addObserver(
                 forName: UserDefaults.didChangeNotification,
                 object: nil,
                 queue: nil
             ) { note in
-                
-                if note.object as? UserDefaults != self.device {
-                    return
-                }
-                
+                if note.object as? UserDefaults != self.device { return }
                 NotificationCenter.default.post(
                     name: Notification.Name(Settings.NotifyName.devDataChanged),
                     object: self.device
                 )
             } as? NSObject
             
-        case .settingsTypeAll:
-            
+        case .all:
             allObserver = NotificationCenter.default.addObserver(
                 forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
                 object: nil,
                 queue: nil
             ) { _ in
-                
                 NotificationCenter.default.post(
                     name: Notification.Name(Settings.NotifyName.allDataChanged),
                     object: NSUbiquitousKeyValueStore.default
                 )
             } as? NSObject
-            
             all?.synchronize()
             
-        default:
-        return
+        default: return
         }
     }
 
@@ -363,12 +314,10 @@ import Foundation
         var unmanagedError: Unmanaged<CFError>?
         defer { unmanagedError?.release() }
         let value = SecTaskCopyValueForEntitlement(self, key as CFString, &unmanagedError)
-
         // It's not an error for the value to be nil, it just means the entitlement isn't present
         if let unmanagedError {
             print(unmanagedError)
         }
-
         return cfTypeRefAsSwiftType(value as String)
 #else
         // This case for iOS (if SecTaskCopyValueForEntitlement
@@ -393,75 +342,37 @@ import Foundation
 
     func removeObject(forKey key: String) {
         switch type {
-        case .settingsTypeApplication:
-            application?.removeObject(forKey: key)
-
-        case .settingsTypeDevice:
-            device?.removeObject(forKey: key)
-
-        case .settingsTypeAll:
-            all?.removeObject(forKey: key)
-            all?.synchronize()
-
-        case .settingsTypeKeychainLocal:
-            keychainLocal?.removeObject(forKey: key)
-
-        case .settingsTypeKeychain:
-            keychain?.removeObject(forKey: key)
-
-        case .settingsTypeKeychainShare:
-            keychainShare?.removeObject(forKey: key)
+        case .application: application?.removeObject(forKey: key)
+        case .device: device?.removeObject(forKey: key)
+        case .all: all?.removeObject(forKey: key); all?.synchronize()
+        case .keychainLocal: keychainLocal?.removeObject(forKey: key)
+        case .keychain: keychain?.removeObject(forKey: key)
+        case .keychainShare: keychainShare?.removeObject(forKey: key)
         }
     }
 
     @objc public func object(forKey key: String) -> Any? {
         switch type {
-        case .settingsTypeApplication:
-            return application?.object(forKey: key)
-
-        case .settingsTypeDevice:
-            return device?.object(forKey: key)
-
-        case .settingsTypeAll:
-            all?.synchronize()
-            return all?.object(forKey: key)
-
-        case .settingsTypeKeychainLocal:
-            return keychainLocal?.object(forKey: key)
-
-        case .settingsTypeKeychain:
-            return keychain?.object(forKey: key)
-
-        case .settingsTypeKeychainShare:
-            return keychainShare?.object(forKey: key)
+        case .application: return application?.object(forKey: key)
+        case .device: return device?.object(forKey: key)
+        case .all: all?.synchronize(); return all?.object(forKey: key)
+        case .keychainLocal: return keychainLocal?.object(forKey: key)
+        case .keychain: return keychain?.object(forKey: key)
+        case .keychainShare: return keychainShare?.object(forKey: key)
         }
     }
 
     @objc public func set(_ object: Any?, forKey key: String) {
         lock.lock()
-        defer {
-            lock.unlock()
-        }
+        defer { lock.unlock() }
         
         switch type {
-        case .settingsTypeApplication:
-            application?.set(object, forKey: key)
-
-        case .settingsTypeDevice:
-            device?.set(object, forKey: key)
-
-        case .settingsTypeAll:
-            all?.synchronize()
-            all?.set(object, forKey: key)
-
-        case .settingsTypeKeychainLocal:
-            keychainLocal?.set(object, forKey: key)
-
-        case .settingsTypeKeychain:
-            keychain?.set(object, forKey: key)
-
-        case .settingsTypeKeychainShare:
-            keychainShare?.set(object, forKey: key)
+        case .application: application?.set(object, forKey: key)
+        case .device: device?.set(object, forKey: key)
+        case .all: all?.synchronize(); all?.set(object, forKey: key)
+        case .keychainLocal: keychainLocal?.set(object, forKey: key)
+        case .keychain: keychain?.set(object, forKey: key)
+        case .keychainShare: keychainShare?.set(object, forKey: key)
         }
     }
 
@@ -495,36 +406,24 @@ final class Keychain {
     }
 
     func query(withKey key: String) -> [CFString: Any] {
-        
         var query: [CFString: Any] = [
             kSecAttrAccount: key,
             kSecClass: kSecClassGenericPassword,
-            kSecAttrSynchronizable: (isLocal ? kCFBooleanFalse : kCFBooleanTrue) as CFBoolean
-        ]
-
-        if isShare {
-            query[kSecAttrAccessGroup] = keychainGroupId
-        } else {
-            query[kSecAttrService] = Bundle.main.bundleIdentifier
-        }
-
+            kSecAttrSynchronizable: (isLocal ? kCFBooleanFalse : kCFBooleanTrue) as CFBoolean]
+        if isShare { query[kSecAttrAccessGroup] = keychainGroupId }
+        else { query[kSecAttrService] = Bundle.main.bundleIdentifier }
         return query
     }
 
     func data(forKey key: String) -> Data? {
         var query = query(withKey: key)
-
         query[kSecMatchLimit] = kSecMatchLimitOne
         query[kSecReturnData] = kCFBooleanTrue
-
         var result: AnyObject?
-
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-
         if status != errSecSuccess && status != errSecItemNotFound {
             print("Keychain failed to retrieve data for key \(key), error: \(status)")
         }
-
         return result as? Data
     }
 
@@ -534,63 +433,43 @@ final class Keychain {
 
     func object(forKey key: String) -> Any? {
         let data = data(forKey: key)
-
         var object: Any?
-
-        if data != nil {
-            object = Settings.object(withData: data!)
-        }
-
+        if data != nil { object = Settings.object(withData: data!) }
         return object
     }
 
     func set(_ object: Any?, forKey key: String) {
         var query = query(withKey: key)
-
         // check for delete if obj nil
         if object == nil {
             // if key data is nil, delete complete )
             if data(forKey: key) == nil { return }
-
             let status = SecItemDelete(query as CFDictionary)
-
             if status != errSecSuccess {
                 print("Keychain failed to delete data for key \(key), error: \(status)")
             }
-
             return
         }
-
         // add or update
         guard let d = Settings.data(withObject: object as Any) else {
             print("Keychain failed to encode object for key \(key)")
-
             return
         }
-
         // update values query
         var update: [CFString: Any] = [
             kSecValueData: d as Any,
-            kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlock
-        ]
-
+            kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlock]
         // there's already existing data for this key, update it
         if data(forKey: key) != nil {
-            let status = SecItemUpdate(query as CFDictionary,
-                                       update as CFDictionary)
-
+            let status = SecItemUpdate(query as CFDictionary, update as CFDictionary)
             if status != errSecSuccess {
                 print("Keychain failed to update data for key \(key), error: \(status)")
             }
-
             return
         }
-
         // no existing data, add a new item
         query = query.merging(update) { $1 }
-
         let status = SecItemAdd(query as CFDictionary, nil)
-
         if status != errSecSuccess {
             print("Keychain failed to store data for key \(key), error: \(status)")
         }
