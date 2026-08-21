@@ -311,14 +311,16 @@ import Foundation
 
     static func valueForEntitlement(key: String) -> String? {
 #if os(OSX) || (os(iOS) && targetEnvironment(macCatalyst))
+        guard let task = SecTaskCreateFromSelf(nil) else { return nil }
         var unmanagedError: Unmanaged<CFError>?
         defer { unmanagedError?.release() }
-        let value = SecTaskCopyValueForEntitlement(self, key as CFString, &unmanagedError)
+        let value = SecTaskCopyValueForEntitlement(task, key as CFString, &unmanagedError)
         // It's not an error for the value to be nil, it just means the entitlement isn't present
         if let unmanagedError {
-            print(unmanagedError)
+            print(unmanagedError.takeUnretainedValue())
         }
-        return cfTypeRefAsSwiftType(value as String)
+        guard let value else { return nil }
+        return cfTypeRefAsSwiftType(value) as? String
 #else
         // This case for iOS (if SecTaskCopyValueForEntitlement
         // add to iOS, need delete this case)
@@ -326,7 +328,7 @@ import Foundation
 #endif
     }
 
-    func cfTypeRefAsSwiftType(_ ref: AnyObject) -> AnyHashable? {
+    static func cfTypeRefAsSwiftType(_ ref: AnyObject) -> AnyHashable? {
         switch CFGetTypeID(ref as CFTypeRef) {
         case CFNullGetTypeID():
             return nil
@@ -456,7 +458,7 @@ final class Keychain {
             return
         }
         // update values query
-        var update: [CFString: Any] = [
+        let update: [CFString: Any] = [
             kSecValueData: d as Any,
             kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlock]
         // there's already existing data for this key, update it

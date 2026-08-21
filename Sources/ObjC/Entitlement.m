@@ -10,7 +10,7 @@
 
 +(NSString *)groupIdWithKey:(NSString *)key
 {
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
     void *(SecTaskCopyValueForEntitlement)(void *task, CFStringRef entitlement, CFErrorRef *error);
     void *(SecTaskCreateFromSelf)(CFAllocatorRef allocator);
 #endif
