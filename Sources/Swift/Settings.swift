@@ -213,12 +213,12 @@ import Foundation
     private(set) lazy var keychainGroupId = SettingsProxy.valueForEntitlement(key: "keychain-access-groups")
 
     // Helpers
-    public static func data(withObject object: Any) -> Data? {
+    @objc public static func data(withObject object: Any) -> Data? {
         try? NSKeyedArchiver.archivedData(withRootObject: object,
                                           requiringSecureCoding: true)
     }
 
-    public static func object(withData data: Data) -> Any? {
+    @objc public static func object(withData data: Data) -> Any? {
         NSKeyedUnarchiver.unarchiveObject(with: data)
     }
 }
