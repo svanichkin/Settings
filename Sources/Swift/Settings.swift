@@ -215,7 +215,7 @@ import Foundation
     // Helpers
     @objc public static func data(withObject object: Any) -> Data? {
         try? NSKeyedArchiver.archivedData(withRootObject: object,
-                                          requiringSecureCoding: true)
+                                          requiringSecureCoding: false)
     }
 
     @objc public static func object(withData data: Data) -> Any? {
