@@ -40,7 +40,7 @@
  Settings.device["TestKey"] = "Test"
 
  In app2 OR app1 extention user iphone
- Settings.deviceAppGroup = "group.com.application.test"
+ Settings.deviceGroupId = "group.com.application.test"
  let s = Settings.device["TestKey"]
 
  Sample 3:

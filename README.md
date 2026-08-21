@@ -52,7 +52,7 @@ Settings.device[@"TestKey"] = @"Test";
 
 In app2 OR app1 extention user iphone
 ```objective-c
-Settings.deviceAppGroup = @"group.com.application.test";
+Settings.deviceGroupId = @"group.com.application.test";
 NSString *s = Settings.device[@"TestKey"];
 ```
 
@@ -65,7 +65,7 @@ Settings.device["TestKey"] = "Test"
 
 In app2 OR app1 extention user iphone
 ```swift
-Settings.deviceAppGroup = "group.com.application.test"
+Settings.deviceGroupId = "group.com.application.test"
 let s = Settings.device["TestKey"]
 ```
 
